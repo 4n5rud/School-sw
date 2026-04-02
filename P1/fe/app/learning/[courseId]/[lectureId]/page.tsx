@@ -16,7 +16,7 @@ export default function LearningPage() {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [showMenu, setShowMenu] = useState(true);
-  const progressInterval = useRef<NodeJS.Timeout>();
+  const progressInterval = useRef<NodeJS.Timeout | undefined>(undefined);
 
   const course = mockCourseDetail[courseId];
   const courseInfo = mockCourses.find((c) => c.id === courseId);
