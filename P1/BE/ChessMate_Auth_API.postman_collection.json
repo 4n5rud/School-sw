@@ -1,0 +1,226 @@
+{
+  "info": {
+    "_postman_id": "chessmate-auth-api",
+    "name": "ChessMate Authentication API",
+    "description": "JWT 기반 인증 시스템 API 테스트 컬렉션",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "회원가입",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"student@example.com\",\n  \"password\": \"SecurePassword123!\",\n  \"nickname\": \"김학생\",\n  \"role\": \"STUDENT\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8080/api/auth/signup",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "api",
+                "auth",
+                "signup"
+              ]
+            },
+            "description": "새로운 사용자 계정 생성"
+          },
+          "response": []
+        },
+        {
+          "name": "로그인",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"student@example.com\",\n  \"password\": \"SecurePassword123!\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8080/api/auth/login",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "사용자 로그인 및 토큰 발급"
+          },
+          "response": []
+        },
+        {
+          "name": "이메일 중복 확인",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/api/auth/check-email?email=student@example.com",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "api",
+                "auth",
+                "check-email"
+              ],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "student@example.com"
+                }
+              ]
+            },
+            "description": "이메일이 이미 사용 중인지 확인"
+          },
+          "response": []
+        },
+        {
+          "name": "토큰 재발급",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{refreshToken}}",
+                "description": "Refresh Token을 Bearer 형식으로 입력"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/api/auth/refresh",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "api",
+                "auth",
+                "refresh"
+              ]
+            },
+            "description": "Refresh Token으로 새로운 Access Token 발급"
+          },
+          "response": []
+        }
+      ],
+      "description": "인증 관련 API"
+    },
+    {
+      "name": "Public",
+      "item": [
+        {
+          "name": "헬스 체크",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/api/health",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "api",
+                "health"
+              ]
+            },
+            "description": "서버 상태 확인"
+          },
+          "response": []
+        }
+      ],
+      "description": "인증이 필요하지 않은 공개 API"
+    },
+    {
+      "name": "Protected Resources",
+      "item": [
+        {
+          "name": "보호된 리소스 (인증 필요)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "description": "로그인 시 받은 Access Token"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/api/health",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "api",
+                "health"
+              ]
+            },
+            "description": "Access Token을 포함한 보호된 리소스 접근 예시"
+          },
+          "response": []
+        }
+      ],
+      "description": "인증이 필요한 API 엔드포인트"
+    }
+  ],
+  "variable": [
+    {
+      "key": "accessToken",
+      "value": "",
+      "description": "로그인 후 응답받은 Access Token을 여기에 저장"
+    },
+    {
+      "key": "refreshToken",
+      "value": "",
+      "description": "로그인 후 응답받은 Refresh Token을 여기에 저장"
+    },
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "description": "API 베이스 URL"
+    }
+  ]
+}
+

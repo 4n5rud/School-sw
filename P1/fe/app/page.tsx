@@ -1,0 +1,147 @@
+'use client';
+
+import { useState } from 'react';
+import Header from '@/components/Header';
+import Footer from '@/components/Footer';
+import CourseCard from '@/components/CourseCard';
+import { mockCourses } from '@/lib/mockData';
+
+type CategoryType = 'ALL' | 'DOMESTIC_STOCK' | 'OVERSEAS_STOCK' | 'CRYPTO' | 'NFT' | 'ETF' | 'FUTURES';
+
+export default function Home() {
+  const [searchKeyword, setSearchKeyword] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<CategoryType>('ALL');
+
+  const categories = [
+    { id: 'all', name: '전체', icon: 'apps', color: 'bg-gray-700' },
+    { id: 'domestic_stock', name: '국내 주식', icon: 'trending-up', color: 'bg-blue-600' },
+    { id: 'overseas_stock', name: '해외 주식', icon: 'globe', color: 'bg-teal-600' },
+    { id: 'crypto', name: '암호화폐', icon: 'coins', color: 'bg-yellow-600' },
+    { id: 'nft', name: 'NFT', icon: 'palette', color: 'bg-purple-600' },
+    { id: 'etf', name: 'ETF', icon: 'chart-histogram', color: 'bg-green-600' },
+    { id: 'futures', name: '선물투자', icon: 'lightning', color: 'bg-red-600' },
+  ];
+
+  const filteredCourses = mockCourses.filter((course) => {
+    const matchesSearch =
+      course.title.toLowerCase().includes(searchKeyword.toLowerCase()) ||
+      course.instructor.toLowerCase().includes(searchKeyword.toLowerCase());
+    const matchesCategory =
+      selectedCategory === 'ALL' || course.category === selectedCategory;
+    return matchesSearch && matchesCategory;
+  });
+
+  const handleCategoryClick = (categoryId: string) => {
+    if (categoryId === 'all') {
+      setSelectedCategory('ALL');
+    } else if (categoryId === 'domestic_stock') {
+      setSelectedCategory('DOMESTIC_STOCK');
+    } else if (categoryId === 'overseas_stock') {
+      setSelectedCategory('OVERSEAS_STOCK');
+    } else if (categoryId === 'crypto') {
+      setSelectedCategory('CRYPTO');
+    } else if (categoryId === 'nft') {
+      setSelectedCategory('NFT');
+    } else if (categoryId === 'etf') {
+      setSelectedCategory('ETF');
+    } else if (categoryId === 'futures') {
+      setSelectedCategory('FUTURES');
+    }
+  };
+
+  return (
+    <>
+      <Header />
+      <main className="min-h-screen bg-[#000000]">
+        {/* Categories Grid */}
+        <section className="bg-[#0a0a0a] border-b border-gray-900 py-8">
+          <div className="max-w-7xl mx-auto px-4">
+            <div className="grid grid-cols-4 md:grid-cols-7 gap-4">
+              {categories.map((category) => (
+                <button
+                  key={category.id}
+                  className="flex flex-col items-center gap-2 group cursor-pointer"
+                  onClick={() => handleCategoryClick(category.id)}
+                >
+                  <div className={`w-16 h-16 rounded-lg ${category.color} flex items-center justify-center text-white text-2xl group-hover:shadow-lg transition-shadow`}>
+                    {category.icon === 'apps' && '⊞'}
+                    {category.icon === 'trending-up' && '📈'}
+                    {category.icon === 'globe' && '🌍'}
+                    {category.icon === 'coins' && '🪙'}
+                    {category.icon === 'palette' && '🎨'}
+                    {category.icon === 'chart-histogram' && '📊'}
+                    {category.icon === 'lightning' && '⚡'}
+                  </div>
+                  <span className="text-xs md:text-sm text-[#ffffff] font-medium text-center">{category.name}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Search Section */}
+        <section className="bg-[#0a0a0a] border-b border-gray-900 py-8">
+          <div className="max-w-7xl mx-auto px-4 space-y-6">
+            <h1 className="text-3xl font-bold text-[#ffffff]">강의 목록</h1>
+
+            {/* Search Bar */}
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="강의명, 강사명으로 검색해보세요..."
+                value={searchKeyword}
+                onChange={(e) => setSearchKeyword(e.target.value)}
+                className="w-full px-4 py-3 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ffffff] bg-[#1a1a1a] text-[#ffffff] placeholder-gray-500"
+              />
+              <button className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-[#ffffff]">
+                search
+              </button>
+            </div>
+
+            {/* Category Filter */}
+            <div className="flex gap-3 flex-wrap">
+              {categories.slice(0, 4).map((cat) => (
+                <button
+                  key={cat.id}
+                  onClick={() => handleCategoryClick(cat.id)}
+                  className={`px-6 py-2 rounded-full font-medium transition ${
+                    (cat.id === 'all' && selectedCategory === 'ALL') ||
+                    (cat.id === 'domestic_stock' && selectedCategory === 'DOMESTIC_STOCK') ||
+                    (cat.id === 'crypto' && selectedCategory === 'CRYPTO')
+                      ? 'bg-[#ffffff] text-[#000000]'
+                      : 'bg-gray-800 text-[#ffffff] hover:bg-gray-700'
+                  }`}
+                >
+                  {cat.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Results */}
+        <section className="bg-[#000000] max-w-7xl mx-auto px-4 py-12">
+          <div className="space-y-8">
+            <p className="text-gray-400">
+              검색 결과: <span className="font-semibold text-[#ffffff]">{filteredCourses.length}</span>개의 강의
+            </p>
+
+            {filteredCourses.length > 0 ? (
+              <div className="grid md:grid-cols-4 sm:grid-cols-2 grid-cols-1 gap-6">
+                {filteredCourses.map((course) => (
+                  <CourseCard key={course.id} course={course} />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-20">
+                <p className="text-2xl text-gray-400 mb-4">검색 결과가 없습니다</p>
+                <p className="text-gray-500">다른 검색어를 시도해보세요</p>
+              </div>
+            )}
+          </div>
+        </section>
+      </main>
+      <Footer />
+    </>
+  );
+}

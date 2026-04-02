@@ -1,0 +1,23 @@
+spring:
+  application:
+    name: BE
+  datasource:
+    url: jdbc:h2:mem:testdb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+# JWT Configuration
+jwt:
+  secret: your-secret-key-must-be-at-least-32-characters-long-for-hs256-algorithm-12345678
+  access-token-expiration: 3600000 # 1시간 (밀리초)
+  refresh-token-expiration: 604800000 # 7일 (밀리초)
+
