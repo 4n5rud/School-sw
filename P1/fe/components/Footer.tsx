@@ -6,7 +6,7 @@ export default function Footer() {
         <div className="grid md:grid-cols-4 gap-8">
           {/* Brand */}
           <div>
-            <h3 className="text-[#ffffff] font-bold text-lg mb-4">StockFlow</h3>
+            <h3 className="text-lg font-bold mb-4"><span className="text-[#FFD700]">Stock</span><span className="text-[#ffffff]">Class</span></h3>
             <p className="text-sm text-gray-500">
               초보 투자자를 위한 신뢰할 수 있는 금융 교육 플랫폼
             </p>
@@ -71,7 +71,7 @@ export default function Footer() {
 
         {/* Bottom Section */}
         <div className="border-t border-gray-700 pt-8 text-center text-sm">
-          <p>&copy; 2024 StockFlow. All rights reserved.</p>
+          <p>&copy; 2024 StockClass. All rights reserved.</p>
         </div>
       </div>
     </footer>

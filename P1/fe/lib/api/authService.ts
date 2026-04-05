@@ -1,10 +1,5 @@
 import { apiClient } from './client';
-import {
-  SignUpRequest,
-  LoginRequest,
-  AuthResponse,
-  UserInfo,
-} from './types';
+import { SignUpRequest, LoginRequest, AuthResponse, UserInfo } from './types';
 
 class AuthService {
   private readonly ACCESS_TOKEN_KEY = 'accessToken';
@@ -16,7 +11,7 @@ class AuthService {
    */
   async signup(data: SignUpRequest): Promise<void> {
     const response = await apiClient.signup(data);
-    this.saveAuthData(response);
+    this.saveAuthData(response.data);
   }
 
   /**
@@ -24,7 +19,7 @@ class AuthService {
    */
   async login(data: LoginRequest): Promise<void> {
     const response = await apiClient.login(data);
-    this.saveAuthData(response);
+    this.saveAuthData(response.data);
   }
 
   /**
@@ -42,7 +37,7 @@ class AuthService {
    */
   async checkEmailAvailability(email: string): Promise<boolean> {
     const response = await apiClient.checkEmail(email);
-    return response.available;
+    return !response.data;
   }
 
   /**
@@ -51,8 +46,10 @@ class AuthService {
   async refreshAccessToken(): Promise<string> {
     const response = await apiClient.refreshToken();
     if (typeof window === 'undefined') return '';
-    localStorage.setItem(this.ACCESS_TOKEN_KEY, response.accessToken);
-    return response.accessToken;
+    localStorage.setItem(this.ACCESS_TOKEN_KEY, response.data.accessToken);
+    localStorage.setItem(this.REFRESH_TOKEN_KEY, response.data.refreshToken);
+    localStorage.setItem(this.USER_KEY, JSON.stringify(response.data.user));
+    return response.data.accessToken;
   }
 
   /**

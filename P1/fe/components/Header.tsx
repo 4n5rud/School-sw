@@ -29,7 +29,7 @@ export default function Header() {
       <nav className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
         {/* Logo */}
         <Link href="/" className="text-2xl font-bold text-[#ffffff]">
-          StockFlow
+<span className="text-[#FFD700]">Stock</span><span className="text-[#ffffff]">Class</span>
         </Link>
 
         {/* Desktop Menu */}
