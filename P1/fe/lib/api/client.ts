@@ -1,9 +1,10 @@
 import {
   SignUpRequest,
   LoginRequest,
-  AuthResponse,
-  CheckEmailResponse,
+  SignUpResponse,
+  LoginResponse,
   RefreshTokenResponse,
+  UserInfo,
   ApiResponse,
   Course,
   CourseCreateRequest,
@@ -93,15 +94,15 @@ class ApiClient {
   // ================================================
   // 인증 API
   // ================================================
-  async signup(data: SignUpRequest): Promise<ApiResponse<AuthResponse>> {
-    return this.makeRequest<AuthResponse>('/auth/signup', {
+  async signup(data: SignUpRequest): Promise<ApiResponse<SignUpResponse>> {
+    return this.makeRequest<SignUpResponse>('/auth/signup', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
-  async login(data: LoginRequest): Promise<ApiResponse<AuthResponse>> {
-    return this.makeRequest<AuthResponse>('/auth/login', {
+  async login(data: LoginRequest): Promise<ApiResponse<LoginResponse>> {
+    return this.makeRequest<LoginResponse>('/auth/login', {
       method: 'POST',
       body: JSON.stringify(data),
     });

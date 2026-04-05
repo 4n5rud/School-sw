@@ -13,12 +13,6 @@ export interface LoginRequest {
   password: string;
 }
 
-export interface AuthResponse {
-  accessToken: string;
-  refreshToken: string;
-  user: UserInfo;
-}
-
 export interface UserInfo {
   id: number;
   email: string;
@@ -27,15 +21,30 @@ export interface UserInfo {
   createdAt: string;
 }
 
-export interface CheckEmailResponse {
-  available: boolean;
-  email: string;
+/**
+ * 회원가입 응답
+ * data: 사용자 정보 (직접 포함)
+ */
+export interface SignUpResponse extends UserInfo {}
+
+/**
+ * 로그인 응답
+ * data: { accessToken, refreshToken, member }
+ */
+export interface LoginResponse {
+  accessToken: string;
+  refreshToken: string;
+  member: UserInfo;
 }
 
+/**
+ * 토큰 갱신 응답
+ * data: { accessToken, refreshToken, member }
+ */
 export interface RefreshTokenResponse {
   accessToken: string;
   refreshToken: string;
-  user: UserInfo;
+  member: UserInfo;
 }
 
 // ================================================

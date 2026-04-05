@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import { SignUpRequest, LoginRequest, AuthResponse, UserInfo } from './types';
+import { SignUpRequest, LoginRequest, SignUpResponse, LoginResponse, UserInfo } from './types';
 
 class AuthService {
   private readonly ACCESS_TOKEN_KEY = 'accessToken';
@@ -8,17 +8,21 @@ class AuthService {
 
   /**
    * 회원가입
+   * 응답: data에 사용자 정보 직접 포함
    */
   async signup(data: SignUpRequest): Promise<void> {
     const response = await apiClient.signup(data);
-    this.saveAuthData(response.data);
+    // 회원가입은 user 정보를 직접 반환
+    this.saveUserData(response.data);
   }
 
   /**
    * 로그인
+   * 응답: data에 accessToken, refreshToken, member 포함
    */
   async login(data: LoginRequest): Promise<void> {
     const response = await apiClient.login(data);
+    // 로그인은 토큰과 member 정보를 반환
     this.saveAuthData(response.data);
   }
 
@@ -34,9 +38,11 @@ class AuthService {
 
   /**
    * 이메일 중복 확인
+   * 응답: data는 boolean (true = 사용 불가, false = 사용 가능)
    */
   async checkEmailAvailability(email: string): Promise<boolean> {
     const response = await apiClient.checkEmail(email);
+    // data가 false이면 사용 가능, true이면 사용 불가
     return !response.data;
   }
 
@@ -46,9 +52,7 @@ class AuthService {
   async refreshAccessToken(): Promise<string> {
     const response = await apiClient.refreshToken();
     if (typeof window === 'undefined') return '';
-    localStorage.setItem(this.ACCESS_TOKEN_KEY, response.data.accessToken);
-    localStorage.setItem(this.REFRESH_TOKEN_KEY, response.data.refreshToken);
-    localStorage.setItem(this.USER_KEY, JSON.stringify(response.data.user));
+    this.saveAuthData(response.data);
     return response.data.accessToken;
   }
 
@@ -85,13 +89,21 @@ class AuthService {
   }
 
   /**
-   * 인증 데이터 저장
+   * 사용자 정보 저장 (회원가입 응답용)
    */
-  private saveAuthData(response: AuthResponse): void {
+  private saveUserData(userData: SignUpResponse): void {
     if (typeof window === 'undefined') return;
-    localStorage.setItem(this.ACCESS_TOKEN_KEY, response.accessToken);
-    localStorage.setItem(this.REFRESH_TOKEN_KEY, response.refreshToken);
-    localStorage.setItem(this.USER_KEY, JSON.stringify(response.user));
+    localStorage.setItem(this.USER_KEY, JSON.stringify(userData));
+  }
+
+  /**
+   * 인증 데이터 저장 (로그인/토큰갱신 응답용)
+   */
+  private saveAuthData(data: LoginResponse): void {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem(this.ACCESS_TOKEN_KEY, data.accessToken);
+    localStorage.setItem(this.REFRESH_TOKEN_KEY, data.refreshToken);
+    localStorage.setItem(this.USER_KEY, JSON.stringify(data.member));
   }
 }
 
