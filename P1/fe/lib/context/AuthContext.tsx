@@ -19,9 +19,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // 초기 로드 시 localStorage에서 사용자 정보 가져오기
-    const currentUser = authService.getUser();
-    setUser(currentUser);
+    // 클라이언트 사이드에서만 localStorage에 접근
+    if (typeof window !== 'undefined') {
+      const currentUser = authService.getUser();
+      setUser(currentUser);
+    }
     setIsLoading(false);
   }, []);
 

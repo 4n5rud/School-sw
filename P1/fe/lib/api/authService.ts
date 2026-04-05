@@ -61,8 +61,16 @@ class AuthService {
    */
   getUser(): UserInfo | null {
     if (typeof window === 'undefined') return null;
-    const userStr = localStorage.getItem(this.USER_KEY);
-    return userStr ? JSON.parse(userStr) : null;
+    try {
+      const userStr = localStorage.getItem(this.USER_KEY);
+      if (!userStr || userStr === 'undefined') {
+        return null;
+      }
+      return JSON.parse(userStr);
+    } catch (error) {
+      console.error('Error parsing user data:', error);
+      return null;
+    }
   }
 
   /**
