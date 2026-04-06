@@ -7,7 +7,6 @@ import com.chessmate.be.service.EnrollmentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springdoc.api.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -48,7 +47,7 @@ public class EnrollmentController {
             @Valid @RequestBody EnrollmentCreateRequest request) {
 
         Long memberId = extractMemberIdFromAuthentication();
-        log.info("Enroll course: {} by member: {}", request.getCourseId(), memberId);
+        log.info("🔐 [권한 검증 통과] STUDENT 역할 확인됨 - Enroll course: {} by member: {}", request.getCourseId(), memberId);
 
         EnrollmentResponse enrollment = enrollmentService.enrollCourse(request, memberId);
         return ResponseEntity.status(HttpStatus.CREATED).body(
@@ -66,7 +65,7 @@ public class EnrollmentController {
     @GetMapping("/my")
     @PreAuthorize("hasRole('STUDENT')")
     public ResponseEntity<ApiResponse<Page<EnrollmentResponse>>> getMyEnrollments(
-            @ParameterObject Pageable pageable) {
+            Pageable pageable) {
 
         Long memberId = extractMemberIdFromAuthentication();
         log.debug("Get enrollments for member: {}", memberId);

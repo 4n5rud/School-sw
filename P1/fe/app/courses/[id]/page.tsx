@@ -1,32 +1,92 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import { mockCourseDetail, mockCourses } from '@/lib/mockData';
+import { courseService, enrollmentService } from '@/lib/api';
 import { useParams } from 'next/navigation';
+import { Course } from '@/lib/api/types';
+import { useAuth } from '@/lib/context/AuthContext';
 
 export default function CourseDetailPage() {
   const params = useParams();
   const courseId = parseInt(params.id as string);
-  const [isEnrolled, setIsEnrolled] = useState(false);
+  const { isLoggedIn } = useAuth();
+  
+  const [course, setCourse] = useState<Course | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isEnrolling, setIsEnrolling] = useState(false);
+  const [enrollSuccess, setEnrollSuccess] = useState(false);
 
-  const course = mockCourseDetail[courseId];
-  const courseInfo = mockCourses.find((c) => c.id === courseId);
+  // 강의 상세 정보 로드
+  useEffect(() => {
+    const loadCourse = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const courseData = await courseService.getCourseById(courseId);
+        setCourse(courseData);
+      } catch (err: any) {
+        console.error('강의 조회 실패:', err);
+        setError(err.message || '강의를 불러오는데 실패했습니다');
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-  if (!course || !courseInfo) {
+    loadCourse();
+  }, [courseId]);
+
+  // 수강 신청 핸들러
+  const handleEnroll = async () => {
+    if (!isLoggedIn) {
+      alert('로그인 후 수강 신청이 가능합니다');
+      return;
+    }
+
+    try {
+      setIsEnrolling(true);
+      await enrollmentService.enrollCourse(courseId);
+      setEnrollSuccess(true);
+      alert('수강 신청이 완료되었습니다!');
+    } catch (err: any) {
+      console.error('수강 신청 실패:', err);
+      alert(err.message || '수강 신청에 실패했습니다');
+    } finally {
+      setIsEnrolling(false);
+    }
+  };
+
+  if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-[#000000]">
-        <p className="text-gray-400 text-lg">강의를 찾을 수 없습니다</p>
-      </div>
+      <>
+        <Header />
+        <main className="min-h-screen bg-[#000000] flex items-center justify-center">
+          <p className="text-gray-400 text-xl">강의를 불러오는 중...</p>
+        </main>
+        <Footer />
+      </>
     );
   }
 
-  const handleEnroll = () => {
-    setIsEnrolled(true);
-    alert('강의 수강이 신청되었습니다!');
-  };
+  if (error || !course) {
+    return (
+      <>
+        <Header />
+        <main className="min-h-screen bg-[#000000] flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-red-400 text-lg mb-4">{error || '강의를 찾을 수 없습니다'}</p>
+            <Link href="/courses" className="inline-block text-[#FFD700] hover:text-yellow-400">
+              강의 목록으로 돌아가기
+            </Link>
+          </div>
+        </main>
+        <Footer />
+      </>
+    );
+  }
 
   return (
     <>
@@ -66,16 +126,14 @@ export default function CourseDetailPage() {
                 {/* Meta Info */}
                 <div className="flex flex-wrap gap-6 text-base">
                   <div className="flex items-center gap-2">
-                    <span className="text-yellow-500 text-xl">★</span>
+                    <span className="text-blue-500 text-xl">👥</span>
                     <span className="text-[#ffffff]">
-                      <strong>{course.rating}</strong>
-                      <span className="text-gray-400 ml-1">
-                        ({course.totalEnrollments}명 참여)
-                      </span>
+                      <strong>{course.studentCount}</strong>
+                      <span className="text-gray-400 ml-1">명 수강 중</span>
                     </span>
                   </div>
                   <div className="text-gray-400">
-                    강사: <strong className="text-[#ffffff]">{course.instructor}</strong>
+                    강사: <strong className="text-[#ffffff]">{course.instructor.nickname}</strong>
                   </div>
                 </div>
 
@@ -89,43 +147,17 @@ export default function CourseDetailPage() {
 
                 {/* Curriculum */}
                 <div className="space-y-6">
-                  <h2 className="text-2xl font-bold text-[#ffffff]">커리큘럼</h2>
+                  <h2 className="text-2xl font-bold text-[#ffffff]">강의 특징</h2>
                   <div className="space-y-4">
-                    {course.sections.map((section, idx) => (
-                      <div key={section.id} className="border border-gray-800 rounded-lg overflow-hidden">
-                        {/* Section Header */}
-                        <div className="bg-[#1a1a1a] p-4 border-b border-gray-800 cursor-pointer hover:bg-[#222222]">
-                          <h3 className="font-semibold text-[#ffffff]">
-                            {section.title}
-                          </h3>
-                          <p className="text-sm text-gray-400">
-                            {section.lectures.length}개 강의
-                          </p>
-                        </div>
-
-                        {/* Lecture List */}
-                        <div className="divide-y divide-gray-800">
-                          {section.lectures.map((lecture, lectureIdx) => (
-                            <div
-                              key={lecture.id}
-                              className="p-4 hover:bg-[#111111] transition"
-                            >
-                              <div className="flex items-start gap-4">
-                                <span className="text-gray-500 font-medium text-sm">
-                                  {lectureIdx + 1}.
-                                </span>
-                                <div className="flex-1 space-y-1">
-                                  <p className="font-medium text-[#ffffff]">
-                                    {lecture.title}
-                                  </p>
-                                  <p className="text-sm text-gray-400">
-                                    {Math.round(lecture.playTime / 60)}분
-                                  </p>
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
+                    {[
+                      '체계적인 커리큘럼으로 기초부터 심화까지 학습',
+                      '실제 투자 사례를 통한 실전 스킬 습득',
+                      '전문가 강사진의 개인 피드백',
+                      '언제 어디서나 학습할 수 있는 온디맨드 강의'
+                    ].map((feature, idx) => (
+                      <div key={idx} className="flex items-start gap-4 p-4 bg-[#1a1a1a] rounded-lg border border-gray-800">
+                        <span className="text-[#FFD700] text-lg">✓</span>
+                        <p className="text-gray-300">{feature}</p>
                       </div>
                     ))}
                   </div>
@@ -151,17 +183,18 @@ export default function CourseDetailPage() {
                   </div>
 
                   {/* Enroll Button */}
-                  {!isEnrolled ? (
+                  {!enrollSuccess ? (
                     <button
                       onClick={handleEnroll}
-                      className="w-full bg-[#ffffff] text-[#000000] font-semibold py-3 rounded-lg hover:bg-gray-200 transition text-lg"
+                      disabled={isEnrolling}
+                      className="w-full bg-[#FFD700] text-[#000000] font-semibold py-3 rounded-lg hover:bg-yellow-400 disabled:bg-gray-600 transition text-lg"
                     >
-                      지금 수강하기
+                      {isEnrolling ? '수강 신청 중...' : '지금 수강하기'}
                     </button>
                   ) : (
                     <div className="space-y-2">
-                      <p className="text-center text-gray-400 font-medium">
-                        ✓ 수강 중입니다
+                      <p className="text-center text-green-400 font-medium">
+                        ✓ 수강 신청 완료
                       </p>
                       <Link
                         href="/my-courses"

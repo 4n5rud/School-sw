@@ -18,6 +18,11 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, Long> {
     Optional<Enrollment> findByMemberIdAndCourseId(Long memberId, Long courseId);
 
     /**
+     * 멤버와 강의로 수강 여부 확인
+     */
+    Optional<Enrollment> findByMemberAndCourse(com.chessmate.be.entity.Member member, com.chessmate.be.entity.Course course);
+
+    /**
      * 강의별 수강생 수 조회
      */
     Integer countByCourseId(Long courseId);

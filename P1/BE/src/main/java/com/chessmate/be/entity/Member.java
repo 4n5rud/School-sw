@@ -2,6 +2,8 @@ package com.chessmate.be.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -23,6 +25,10 @@ import lombok.NoArgsConstructor;
 @Builder
 public class Member {
 
+    public enum Role {
+        STUDENT, TEACHER, ADMIN
+    }
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -36,8 +42,9 @@ public class Member {
     @Column(nullable = false)
     private String nickname;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String role; // STUDENT, TEACHER, ADMIN
+    private Role role; // STUDENT, TEACHER, ADMIN
 
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;

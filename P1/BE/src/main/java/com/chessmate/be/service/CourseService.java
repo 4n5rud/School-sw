@@ -3,6 +3,8 @@ package com.chessmate.be.service;
 import com.chessmate.be.dto.request.CourseCreateRequest;
 import com.chessmate.be.dto.request.CourseUpdateRequest;
 import com.chessmate.be.dto.response.CourseResponse;
+import com.chessmate.be.dto.response.CourseSearchResponse;
+import com.chessmate.be.dto.response.CourseSearchResponse;
 import com.chessmate.be.entity.Course;
 import com.chessmate.be.entity.Member;
 import com.chessmate.be.exception.AccessDeniedException;
@@ -52,7 +54,7 @@ public class CourseService {
                 });
         
         // 2. 강사 역할 확인
-        if (!instructor.getRole().equals("TEACHER")) {
+        if (!instructor.getRole().equals(Member.Role.TEACHER)) {
             log.warn("User is not a teacher: {} - {}", instructorId, instructor.getRole());
             throw new AccessDeniedException("강사만 강의를 등록할 수 있습니다");
         }
@@ -116,11 +118,11 @@ public class CourseService {
     /**
      * 카테고리별 강의 목록 조회
      * 
-     * @param category STOCK 또는 CRYPTO
+     * @param category 강의 카테고리 (Enum)
      * @param pageable 페이지네이션 정보
      * @return 강의 페이지 정보
      */
-    public Page<CourseResponse> getCoursesByCategory(String category, Pageable pageable) {
+    public Page<CourseResponse> getCoursesByCategory(Course.CourseCategory category, Pageable pageable) {
         log.debug("Get courses by category: {}", category);
         
         Page<Course> courses = courseRepository.findByCategory(category, pageable);
@@ -129,6 +131,25 @@ public class CourseService {
             Integer studentCount = enrollmentRepository.countByCourseId(course.getId());
             return CourseResponse.from(course, studentCount);
         });
+    }
+
+    /**
+     * 카테고리별 강의 목록 조회 (String 기반 - 편의성)
+     *
+     * @param categoryName 강의 카테고리 이름 (String)
+     * @param pageable 페이지네이션 정보
+     * @return 강의 페이지 정보
+     */
+    public Page<CourseResponse> getCoursesByCategoryName(String categoryName, Pageable pageable) {
+        log.debug("Get courses by category name: {}", categoryName);
+
+        try {
+            Course.CourseCategory category = Course.CourseCategory.valueOf(categoryName.toUpperCase());
+            return getCoursesByCategory(category, pageable);
+        } catch (IllegalArgumentException e) {
+            log.warn("Invalid category: {}", categoryName);
+            throw new IllegalArgumentException("유효하지 않은 카테고리입니다: " + categoryName);
+        }
     }
 
     /**
@@ -143,6 +164,49 @@ public class CourseService {
         
         Page<Course> courses = courseRepository.findByInstructorId(instructorId, pageable);
         
+        return courses.map(course -> {
+            Integer studentCount = enrollmentRepository.countByCourseId(course.getId());
+            return CourseResponse.from(course, studentCount);
+        });
+    }
+
+    /**
+     * 강의 검색 (키워드 + 카테고리)
+     *
+     * @param keyword 검색 키워드 (제목 기반)
+     * @param category 카테고리 필터 (Enum 기반, null이면 전체)
+     * @param pageable 페이지네이션 정보
+     * @return 검색 결과 페이지
+     */
+    public Page<CourseResponse> searchCourses(
+        String keyword,
+        String category,
+        Pageable pageable
+    ) {
+        log.debug("Search courses - keyword: {}, category: {}, page: {}", keyword, category, pageable.getPageNumber());
+
+        // 키워드가 빈 문자열이면 전체 조회
+        String searchKeyword = (keyword != null && !keyword.trim().isEmpty())
+            ? keyword.trim()
+            : "";
+
+        // 카테고리 처리 (String → Enum)
+        Course.CourseCategory courseCategory = null;
+        if (category != null && !category.trim().isEmpty()) {
+            try {
+                courseCategory = Course.CourseCategory.valueOf(category.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                log.warn("Invalid category: {}", category);
+                courseCategory = null; // 유효하지 않은 카테고리는 무시
+            }
+        }
+
+        Page<Course> courses = courseRepository.searchByKeywordAndCategory(
+            searchKeyword,
+            courseCategory,
+            pageable
+        );
+
         return courses.map(course -> {
             Integer studentCount = enrollmentRepository.countByCourseId(course.getId());
             return CourseResponse.from(course, studentCount);

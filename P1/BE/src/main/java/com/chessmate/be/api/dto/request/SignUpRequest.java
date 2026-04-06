@@ -1,6 +1,6 @@
 package com.chessmate.be.api.dto.request;
 
-import com.chessmate.be.domain.entity.Member;
+import com.chessmate.be.entity.Member;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
@@ -28,13 +28,4 @@ public class SignUpRequest {
 
     @NotBlank(message = "역할은 필수입니다")
     private String role;
-
-    public Member toEntity(String encodedPassword) {
-        return Member.builder()
-            .email(email)
-            .password(encodedPassword)
-            .nickname(nickname)
-            .role(Member.Role.valueOf(role.toUpperCase()))
-            .build();
-    }
 }

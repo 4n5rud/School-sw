@@ -33,6 +33,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
         try {
             String jwt = getJwtFromRequest(request);
+            String requestPath = request.getRequestURI();
+            String requestMethod = request.getMethod();
+
+            log.debug("🔍 [JWT Filter] {} {} - Token Present: {}", requestMethod, requestPath, jwt != null);
 
             if (StringUtils.hasText(jwt)) {
                 // 토큰 검증
@@ -56,15 +60,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authentication);
 
-                    log.debug("JWT 인증 성공. Member ID: {}, Role: {}", memberId, role);
+                    log.info("✅ [JWT Filter] 인증 성공 - Member ID: {}, Role: {}, Authority: {}",
+                            memberId, role, roleString);
                 }
+            } else {
+                log.debug("⚠️ [JWT Filter] Token 없음 - {}", requestPath);
             }
         } catch (IllegalArgumentException e) {
-            log.warn("유효하지 않은 JWT 토큰: {}", e.getMessage());
+            log.warn("❌ [JWT Filter] 유효하지 않은 토큰: {}", e.getMessage());
         } catch (io.jsonwebtoken.ExpiredJwtException e) {
-            log.warn("JWT 토큰 만료: {}", e.getMessage());
+            log.warn("⏰ [JWT Filter] 토큰 만료: {}", e.getMessage());
         } catch (Exception ex) {
-            log.error("JWT 토큰 검증 중 오류 발생: ", ex);
+            log.error("🔥 [JWT Filter] 검증 중 오류 발생: ", ex);
         }
 
         filterChain.doFilter(request, response);

@@ -15,7 +15,8 @@ public class CourseResponse {
     private Long id;
     private String title;
     private String description;
-    private String category;
+    private Course.CourseCategory category;
+    private String categoryDisplayName; // 한글 표시명
     private Integer price;
     private String thumbnailUrl;
     private MemberResponse instructor;
@@ -28,6 +29,7 @@ public class CourseResponse {
                 .title(course.getTitle())
                 .description(course.getDescription())
                 .category(course.getCategory())
+                .categoryDisplayName(course.getCategory().getDisplayName())
                 .price(course.getPrice())
                 .thumbnailUrl(course.getThumbnailUrl())
                 .instructor(MemberResponse.from(course.getInstructor()))

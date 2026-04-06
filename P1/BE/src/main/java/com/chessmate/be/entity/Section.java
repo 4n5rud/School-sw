@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import java.util.List;
 
 @Entity
 @Table(name = "section")
@@ -27,5 +28,9 @@ public class Section {
 
     @Column(nullable = false)
     private Integer sortOrder;
+
+    /** 섹션의 강의 목록 (1:N 관계) */
+    @OneToMany(mappedBy = "section", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Lecture> lectures;
 }
 

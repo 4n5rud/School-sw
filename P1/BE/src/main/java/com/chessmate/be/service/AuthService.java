@@ -56,7 +56,7 @@ public class AuthService {
                 .email(request.getEmail())
                 .password(encryptedPassword)
                 .nickname(request.getNickname())
-                .role(request.getRole())
+                .role(Member.Role.valueOf(request.getRole().toUpperCase()))
                 .build();
 
         Member savedMember = memberRepository.save(member);
@@ -92,8 +92,8 @@ public class AuthService {
         }
 
         // 3. 토큰 생성
-        String accessToken = jwtTokenProvider.generateAccessToken(member.getId(), member.getRole());
-        String refreshToken = jwtTokenProvider.generateRefreshToken(member.getId(), member.getRole());
+        String accessToken = jwtTokenProvider.generateAccessToken(member.getId(), member.getRole().name());
+        String refreshToken = jwtTokenProvider.generateRefreshToken(member.getId(), member.getRole().name());
 
         log.info("Login successful for user: {} (id: {})", request.getEmail(), member.getId());
 

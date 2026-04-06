@@ -115,11 +115,23 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 // 요청 권한 설정
                 .authorizeHttpRequests(auth -> auth
-                        // 인증 관련 엔드포인트
+                        // 🟢 인증 관련 엔드포인트 (공개)
                         .requestMatchers("/api/auth/**").permitAll()
-                        // 관리자 엔드포인트
+
+                        // 🟢 강의 조회 (공개)
+                        .requestMatchers(HttpMethod.GET, "/api/v1/courses").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/courses/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/courses").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/courses/**").permitAll()
+
+                        // 🟢 헬스 체크 (공개)
+                        .requestMatchers("/health").permitAll()
+                        .requestMatchers("/api/health").permitAll()
+
+                        // 🔴 관리자 엔드포인트 (ADMIN만)
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                        // 그 외 모든 요청
+
+                        // 🔴 나머지 API는 인증 필수
                         .anyRequest().authenticated()
                 )
                 // JWT 필터 등록

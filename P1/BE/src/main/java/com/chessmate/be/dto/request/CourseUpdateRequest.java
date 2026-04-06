@@ -4,8 +4,8 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
-import jakarta.validation.constraints.URL;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -29,7 +29,7 @@ public class CourseUpdateRequest {
     @Max(value = 10000000, message = "가격은 10,000,000 이하여야 합니다")
     private Integer price;
 
-    @URL(message = "유효한 URL 형식이 아닙니다")
+    @Pattern(regexp = "^(https?://)?[\\w\\.-]+\\.\\w+.*$", message = "유효한 URL 형식이 아닙니다")
     private String thumbnailUrl;
 }
 

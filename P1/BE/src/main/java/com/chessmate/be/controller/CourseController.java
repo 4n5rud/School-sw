@@ -4,12 +4,13 @@ import com.chessmate.be.dto.request.CourseCreateRequest;
 import com.chessmate.be.dto.request.CourseUpdateRequest;
 import com.chessmate.be.dto.response.ApiResponse;
 import com.chessmate.be.dto.response.CourseResponse;
+import com.chessmate.be.dto.response.CourseSearchResponse;
 import com.chessmate.be.service.CourseService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springdoc.api.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -23,6 +24,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -83,7 +85,7 @@ public class CourseController {
      */
     @GetMapping
     public ResponseEntity<ApiResponse<Page<CourseResponse>>> getAllCourses(
-            @ParameterObject Pageable pageable) {
+            Pageable pageable) {
 
         log.debug("Get all courses - page: {}, size: {}", pageable.getPageNumber(), pageable.getPageSize());
         Page<CourseResponse> courses = courseService.getAllCourses(pageable);
@@ -94,17 +96,17 @@ public class CourseController {
      * 카테고리별 강의 조회
      * GET /api/courses/category/{category}?page=0&size=10
      *
-     * @param category 강의 카테고리 (STOCK 또는 CRYPTO)
+     * @param category 강의 카테고리 (DOMESTIC_STOCK, OVERSEAS_STOCK, CRYPTO, NFT, ETF, FUTURES)
      * @param pageable 페이지네이션 정보
      * @return 강의 페이지 정보
      */
     @GetMapping("/category/{category}")
     public ResponseEntity<ApiResponse<Page<CourseResponse>>> getCoursesByCategory(
             @PathVariable String category,
-            @ParameterObject Pageable pageable) {
+            Pageable pageable) {
 
         log.debug("Get courses by category: {}", category);
-        Page<CourseResponse> courses = courseService.getCoursesByCategory(category, pageable);
+        Page<CourseResponse> courses = courseService.getCoursesByCategoryName(category, pageable);
         return ResponseEntity.ok(ApiResponse.success(courses));
     }
 
@@ -119,7 +121,7 @@ public class CourseController {
     @GetMapping("/instructor/{instructorId}")
     public ResponseEntity<ApiResponse<Page<CourseResponse>>> getCoursesByInstructor(
             @PathVariable Long instructorId,
-            @ParameterObject Pageable pageable) {
+            Pageable pageable) {
 
         log.debug("Get courses by instructor: {}", instructorId);
         Page<CourseResponse> courses = courseService.getCoursesByInstructor(instructorId, pageable);
@@ -168,6 +170,50 @@ public class CourseController {
         return ResponseEntity.ok(
                 ApiResponse.success(null, "강의가 삭제되었습니다")
         );
+    }
+
+    /**
+     * 강의 검색 및 필터링
+     * GET /api/courses/search?keyword=주식&category=DOMESTIC_STOCK&page=0&size=10
+     *
+     * @param keyword 검색 키워드 (제목 기반)
+     * @param category 카테고리 필터 (DOMESTIC_STOCK, OVERSEAS_STOCK, CRYPTO, NFT, ETF, FUTURES)
+     * @param page 페이지 번호 (기본값: 0)
+     * @param size 페이지 크기 (기본값: 10)
+     * @return 검색 결과 페이지
+     */
+    @GetMapping("/search")
+    public ResponseEntity<ApiResponse<Page<CourseResponse>>> searchCourses(
+            @RequestParam(defaultValue = "") String keyword,
+            @RequestParam(required = false) String category,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        log.info("Search courses - keyword: {}, category: {}, page: {}, size: {}", keyword, category, page, size);
+
+        // 페이지 크기 제한 (최대 50)
+        if (size > 50) {
+            size = 50;
+            log.warn("Page size limited to 50");
+        }
+
+        Pageable pageable = PageRequest.of(
+            page,
+            size,
+            org.springframework.data.domain.Sort.by("createdAt").descending()
+        );
+
+        Page<CourseResponse> result = courseService.searchCourses(
+            keyword,
+            category,
+            pageable
+        );
+
+        log.info("Search result: {} courses found", result.getTotalElements());
+        return ResponseEntity.ok(ApiResponse.success(
+            result,
+            "강의 검색 결과입니다."
+        ));
     }
 
     /**

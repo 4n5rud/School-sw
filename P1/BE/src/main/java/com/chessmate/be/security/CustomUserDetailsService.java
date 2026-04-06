@@ -35,11 +35,11 @@ public class CustomUserDetailsService implements UserDetailsService {
     /**
      * Role을 기반으로 권한 설정
      */
-    private Collection<? extends GrantedAuthority> getAuthorities(String role) {
+    private Collection<? extends GrantedAuthority> getAuthorities(Member.Role role) {
         Collection<GrantedAuthority> authorities = new ArrayList<>();
 
         if (role != null) {
-            String roleString = role.startsWith("ROLE_") ? role : "ROLE_" + role;
+            String roleString = "ROLE_" + role.name();
             authorities.add(new SimpleGrantedAuthority(roleString));
         }
 
