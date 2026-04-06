@@ -4,7 +4,6 @@ import com.chessmate.be.dto.request.CourseCreateRequest;
 import com.chessmate.be.dto.request.CourseUpdateRequest;
 import com.chessmate.be.dto.response.ApiResponse;
 import com.chessmate.be.dto.response.CourseResponse;
-import com.chessmate.be.dto.response.CourseSearchResponse;
 import com.chessmate.be.service.CourseService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -74,6 +73,50 @@ public class CourseController {
         log.debug("Get course detail: {}", courseId);
         CourseResponse course = courseService.getCourseById(courseId);
         return ResponseEntity.ok(ApiResponse.success(course));
+    }
+
+    /**
+     * 강의 검색 및 필터링 (우선순위: 가장 먼저 체크)
+     * GET /api/courses/search?keyword=주식&category=DOMESTIC_STOCK&page=0&size=10
+     *
+     * @param keyword 검색 키워드 (제목 기반)
+     * @param category 카테고리 필터 (DOMESTIC_STOCK, OVERSEAS_STOCK, CRYPTO, NFT, ETF, FUTURES)
+     * @param page 페이지 번호 (기본값: 0)
+     * @param size 페이지 크기 (기본값: 10)
+     * @return 검색 결과 페이지
+     */
+    @GetMapping("/search")
+    public ResponseEntity<ApiResponse<Page<CourseResponse>>> searchCourses(
+            @RequestParam(defaultValue = "") String keyword,
+            @RequestParam(required = false) String category,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        log.info("Search courses - keyword: {}, category: {}, page: {}, size: {}", keyword, category, page, size);
+
+        // 페이지 크기 제한 (최대 50)
+        if (size > 50) {
+            size = 50;
+            log.warn("Page size limited to 50");
+        }
+
+        Pageable pageable = PageRequest.of(
+            page,
+            size,
+            org.springframework.data.domain.Sort.by("createdAt").descending()
+        );
+
+        Page<CourseResponse> result = courseService.searchCourses(
+            keyword,
+            category,
+            pageable
+        );
+
+        log.info("Search result: {} courses found", result.getTotalElements());
+        return ResponseEntity.ok(ApiResponse.success(
+            result,
+            "강의 검색 결과입니다."
+        ));
     }
 
     /**
@@ -172,49 +215,6 @@ public class CourseController {
         );
     }
 
-    /**
-     * 강의 검색 및 필터링
-     * GET /api/courses/search?keyword=주식&category=DOMESTIC_STOCK&page=0&size=10
-     *
-     * @param keyword 검색 키워드 (제목 기반)
-     * @param category 카테고리 필터 (DOMESTIC_STOCK, OVERSEAS_STOCK, CRYPTO, NFT, ETF, FUTURES)
-     * @param page 페이지 번호 (기본값: 0)
-     * @param size 페이지 크기 (기본값: 10)
-     * @return 검색 결과 페이지
-     */
-    @GetMapping("/search")
-    public ResponseEntity<ApiResponse<Page<CourseResponse>>> searchCourses(
-            @RequestParam(defaultValue = "") String keyword,
-            @RequestParam(required = false) String category,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-
-        log.info("Search courses - keyword: {}, category: {}, page: {}, size: {}", keyword, category, page, size);
-
-        // 페이지 크기 제한 (최대 50)
-        if (size > 50) {
-            size = 50;
-            log.warn("Page size limited to 50");
-        }
-
-        Pageable pageable = PageRequest.of(
-            page,
-            size,
-            org.springframework.data.domain.Sort.by("createdAt").descending()
-        );
-
-        Page<CourseResponse> result = courseService.searchCourses(
-            keyword,
-            category,
-            pageable
-        );
-
-        log.info("Search result: {} courses found", result.getTotalElements());
-        return ResponseEntity.ok(ApiResponse.success(
-            result,
-            "강의 검색 결과입니다."
-        ));
-    }
 
     /**
      * SecurityContext에서 Member ID 추출
