@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -76,13 +77,13 @@ public class CourseController {
     }
 
     /**
-     * 강의 검색 및 필터링 (우선순위: 가장 먼저 체크)
-     * GET /api/courses/search?keyword=주식&category=DOMESTIC_STOCK&page=0&size=10
+     * 강의 검색 및 필터링
+     * GET /api/courses/search?keyword=주식&category=DOMESTIC_STOCK&page=0&size=50
      *
-     * @param keyword 검색 키워드 (제목 기반)
-     * @param category 카테고리 필터 (DOMESTIC_STOCK, OVERSEAS_STOCK, CRYPTO, NFT, ETF, FUTURES)
+     * @param keyword 검색 키워드 (제목 기반, 기본값: 빈 문자열 = 모든 강의)
+     * @param category 카테고리 필터 (선택사항, 지정 시 필터링)
      * @param page 페이지 번호 (기본값: 0)
-     * @param size 페이지 크기 (기본값: 10)
+     * @param size 페이지 크기 (기본값: 50 - 최대 100)
      * @return 검색 결과 페이지
      */
     @GetMapping("/search")
@@ -90,20 +91,20 @@ public class CourseController {
             @RequestParam(defaultValue = "") String keyword,
             @RequestParam(required = false) String category,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @RequestParam(defaultValue = "50") int size) {
 
         log.info("Search courses - keyword: {}, category: {}, page: {}, size: {}", keyword, category, page, size);
 
-        // 페이지 크기 제한 (최대 50)
-        if (size > 50) {
-            size = 50;
-            log.warn("Page size limited to 50");
+        // 페이지 크기 제한 (최대 100)
+        if (size > 100) {
+            size = 100;
+            log.warn("Page size limited to 100");
         }
 
         Pageable pageable = PageRequest.of(
             page,
             size,
-            org.springframework.data.domain.Sort.by("createdAt").descending()
+            Sort.by("createdAt").descending()
         );
 
         Page<CourseResponse> result = courseService.searchCourses(
@@ -115,22 +116,37 @@ public class CourseController {
         log.info("Search result: {} courses found", result.getTotalElements());
         return ResponseEntity.ok(ApiResponse.success(
             result,
-            "강의 검색 결과입니다."
+            result.getTotalElements() > 0 ? "강의 검색 결과입니다." : "검색 결과가 없습니다."
         ));
     }
 
     /**
-     * 강의 목록 조회 (페이지네이션)
-     * GET /api/courses?page=0&size=10&sort=id,desc
+     * 강의 목록 조회 (전체 강의 - 카테고리 없음)
+     * GET /api/courses?page=0&size=100
      *
-     * @param pageable 페이지네이션 정보
+     * 기본 동작:
+     * - 파라미터 없음: 전체 강의 100개까지 한 페이지에 표시
+     * - ?page=0&size=10: 원하는 크기로 페이지네이션 가능
+     *
+     * @param page 페이지 번호 (기본값: 0)
+     * @param size 페이지당 개수 (기본값: 100 - 모든 강의 표시)
+     * @param sort 정렬 기준 (기본값: createdAt 내림차순)
      * @return 강의 페이지 정보
      */
     @GetMapping
     public ResponseEntity<ApiResponse<Page<CourseResponse>>> getAllCourses(
-            Pageable pageable) {
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "100") int size,
+            @RequestParam(defaultValue = "createdAt") String sort) {
 
-        log.debug("Get all courses - page: {}, size: {}", pageable.getPageNumber(), pageable.getPageSize());
+        // 페이지 크기 제한 (최대 100)
+        if (size > 100) {
+            size = 100;
+        }
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by(sort).descending());
+
+        log.debug("Get all courses - page: {}, size: {}, sort: {}", page, size, sort);
         Page<CourseResponse> courses = courseService.getAllCourses(pageable);
         return ResponseEntity.ok(ApiResponse.success(courses));
     }

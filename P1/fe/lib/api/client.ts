@@ -66,11 +66,18 @@ class ApiClient {
     }
 
     if (!response.ok) {
-      throw {
+      const token = this.getAccessToken();
+      const errorLog = {
         message: data.message || response.statusText,
         status: response.status,
         code: data.code,
-      } as ApiError;
+        hasToken: !!token,
+        tokenLength: token?.length || 0,
+      };
+
+      console.error('[API Error]', response.status, errorLog);
+
+      throw errorLog as ApiError;
     }
 
     return data;
@@ -82,10 +89,22 @@ class ApiClient {
   ): Promise<ApiResponse<T>> {
     const { includeAuth = false, ...fetchOptions } = options;
     const url = `${this.baseUrl}${endpoint}`;
+    const headers = this.getHeaders(includeAuth);
+
+    // 디버깅: 인증이 필요한 요청인 경우 토큰 상태 로깅
+    if (includeAuth) {
+      const token = this.getAccessToken();
+      const authHeader = (headers as any)['Authorization'];
+      console.log(`[API] ${fetchOptions.method} ${endpoint}`, {
+        hasToken: !!token,
+        tokenLength: token?.length || 0,
+        authHeader: authHeader ? '포함됨' : '없음',
+      });
+    }
 
     const response = await fetch(url, {
       ...fetchOptions,
-      headers: this.getHeaders(includeAuth),
+      headers,
     });
 
     return this.handleResponse<ApiResponse<T>>(response);

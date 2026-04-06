@@ -10,6 +10,7 @@ interface AuthContextType {
   isLoading: boolean;
   logout: () => void;
   refreshUser: () => void;
+  hasValidToken: () => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -18,10 +19,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserInfo | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // 초기 로드 시 localStorage에서 user 정보 복원
   useEffect(() => {
-    // 클라이언트 사이드에서만 localStorage에 접근
     if (typeof window !== 'undefined') {
       const currentUser = authService.getUser();
+      const token = authService.getAccessToken();
+      
+      console.log('[AuthContext] 초기 로드:', {
+        hasUser: !!currentUser,
+        hasToken: !!token,
+        tokenLength: token?.length || 0,
+      });
+      
       setUser(currentUser);
     }
     setIsLoading(false);
@@ -30,21 +39,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = () => {
     authService.logout();
     setUser(null);
+    console.log('[AuthContext] 로그아웃 완료');
   };
 
   const refreshUser = () => {
     const currentUser = authService.getUser();
+    const token = authService.getAccessToken();
+    
+    console.log('[AuthContext] refreshUser 호출:', {
+      hasUser: !!currentUser,
+      hasToken: !!token,
+      tokenLength: token?.length || 0,
+    });
+    
     setUser(currentUser);
+  };
+
+  const hasValidToken = () => {
+    if (typeof window === 'undefined') return false;
+    const token = authService.getAccessToken();
+    return !!token && token.length > 0;
   };
 
   return (
     <AuthContext.Provider
       value={{
         user,
-        isLoggedIn: user !== null,
+        isLoggedIn: user !== null && hasValidToken(),
         isLoading,
         logout,
         refreshUser,
+        hasValidToken,
       }}
     >
       {children}

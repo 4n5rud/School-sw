@@ -48,6 +48,7 @@ export default function CourseDetailPage() {
 
     try {
       setIsEnrolling(true);
+      console.log('수강 신청 시작:', { courseId, isLoggedIn });
       await enrollmentService.enrollCourse(courseId);
       setEnrollSuccess(true);
       alert('수강 신청이 완료되었습니다!');

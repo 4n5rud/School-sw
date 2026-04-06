@@ -208,19 +208,25 @@ GET /api/auth/check-email?email=user@example.com
 
 ## 강의 (Course)
 
-### 1️⃣ 전체 강의 목록 조회
+### 1️⃣ 전체 강의 목록 조회 (카테고리 구분 없음)
 
 **엔드포인트**
 ```http
-GET /api/courses?page=0&size=10&sort=createdAt,desc
+GET /api/courses?page=0&size=100
 ```
+
+**설명**
+- 모든 카테고리의 강의를 함께 조회합니다
+- 카테고리별 구분이 없으므로 프론트엔드에서 자유롭게 표시할 수 있습니다
+- 기본값: 100개까지 한 페이지에 표시 (모든 강의)
+- 원하는 크기로 커스터마이징 가능
 
 **쿼리 파라미터**
 | 파라미터 | 타입 | 기본값 | 설명 |
 |---------|------|-------|------|
 | page | int | 0 | 페이지 번호 (0부터 시작) |
-| size | int | 10 | 페이지당 개수 (최대 50) |
-| sort | String | createdAt,desc | 정렬 기준 |
+| size | int | 100 | 페이지당 개수 (최대 100) |
+| sort | String | createdAt | 정렬 기준 |
 
 **응답 (200 OK)**
 ```json
@@ -245,24 +251,77 @@ GET /api/courses?page=0&size=10&sort=createdAt,desc
         },
         "studentCount": 45,
         "createdAt": "2026-04-05T10:30:00"
+      },
+      {
+        "id": 2,
+        "title": "미국 주식 투자 시작하기",
+        "description": "미국 주식 기초 강의입니다.",
+        "category": "OVERSEAS_STOCK",
+        "categoryDisplayName": "해외 주식",
+        "price": 29900,
+        "thumbnailUrl": "https://...",
+        "instructor": {
+          "id": 2,
+          "email": "teacher2@example.com",
+          "nickname": "암호화폐 전문가 이강사",
+          "role": "TEACHER"
+        },
+        "studentCount": 32,
+        "createdAt": "2026-04-05T10:35:00"
+      },
+      {
+        "id": 3,
+        "title": "비트코인 완전 정복",
+        "description": "암호화폐 기초 강의입니다.",
+        "category": "CRYPTO",
+        "categoryDisplayName": "암호화폐",
+        "price": 29900,
+        "thumbnailUrl": "https://...",
+        "instructor": {
+          "id": 3,
+          "email": "teacher3@example.com",
+          "nickname": "파이낸셜 컨설턴트 박강사",
+          "role": "TEACHER"
+        },
+        "studentCount": 28,
+        "createdAt": "2026-04-05T10:40:00"
       }
+      // ... 총 80개의 강의가 모두 포함됨
     ],
     "pageable": {
       "pageNumber": 0,
-      "pageSize": 10,
+      "pageSize": 100,
       "sort": { ... }
     },
-    "totalElements": 100,
-    "totalPages": 10,
+    "totalElements": 80,
+    "totalPages": 1,
     "first": true,
-    "last": false
+    "last": true
   }
+}
+```
+
+**사용 예시**
+
+```javascript
+// 모든 강의 한 번에 조회
+async function getAllCourses() {
+  const response = await fetch('/api/courses?page=0&size=100');
+  const result = await response.json();
+  return result.data.content; // 80개 강의 배열
+}
+
+// 페이지네이션으로 10개씩 조회
+async function getCoursesWithPagination(page = 0, size = 10) {
+  const response = await fetch(`/api/courses?page=${page}&size=${size}`);
+  const result = await response.json();
+  return result.data; // 페이지네이션 정보 포함
 }
 ```
 
 ---
 
-### 2️⃣ 강의 상세 조회
+### 6️⃣ 강의 상세 조회
 
 **엔드포인트**
 ```http
@@ -301,89 +360,7 @@ GET /api/courses/{courseId}
 
 ---
 
-### 3️⃣ 강의 검색 및 필터링
-
-**엔드포인트**
-```http
-GET /api/courses/search?keyword=주식&category=DOMESTIC_STOCK&page=0&size=10
-```
-
-**쿼리 파라미터**
-| 파라미터 | 타입 | 기본값 | 설명 |
-|---------|------|-------|------|
-| keyword | String | "" | 검색 키워드 (제목 기반) |
-| category | String | - | 카테고리 필터 (선택) |
-| page | int | 0 | 페이지 번호 |
-| size | int | 10 | 페이지당 개수 |
-
-**가능한 카테고리 값**
-- `DOMESTIC_STOCK` - 국내 주식
-- `OVERSEAS_STOCK` - 해외 주식
-- `CRYPTO` - 암호화폐
-- `NFT` - NFT
-- `ETF` - ETF
-- `FUTURES` - 선물투자
-
-**응답 (200 OK)**
-```json
-{
-  "success": true,
-  "message": "강의 검색 결과입니다.",
-  "data": {
-    "content": [ ... ],
-    "totalElements": 25,
-    "totalPages": 3
-  }
-}
-```
-
----
-
-### 4️⃣ 카테고리별 강의 조회
-
-**엔드포인트**
-```http
-GET /api/courses/category/{category}?page=0&size=10
-```
-
-**경로 파라미터**
-| 파라미터 | 타입 | 설명 |
-|---------|------|------|
-| category | String | 카테고리 (DOMESTIC_STOCK, OVERSEAS_STOCK, CRYPTO, NFT, ETF, FUTURES) |
-
-**응답 (200 OK)**
-```json
-{
-  "success": true,
-  "message": null,
-  "data": {
-    "content": [ ... ],
-    "totalElements": 12,
-    "totalPages": 2
-  }
-}
-```
-
----
-
-### 5️⃣ 강사별 강의 조회
-
-**엔드포인트**
-```http
-GET /api/courses/instructor/{instructorId}?page=0&size=10
-```
-
-**경로 파라미터**
-| 파라미터 | 타입 | 설명 |
-|---------|------|------|
-| instructorId | Long | 강사 ID |
-
-**응답 (200 OK)**
-강의 목록 (위의 전체 강의 목록과 동일한 형식)
-
----
-
-### 6️⃣ 강의 등록 (강사만)
+### 7️⃣ 강의 등록 (강사만)
 
 **엔드포인트**
 ```http
@@ -425,7 +402,7 @@ Authorization: Bearer {accessToken}
 
 ---
 
-### 7️⃣ 강의 수정 (강사만)
+### 8️⃣ 강의 수정 (강사만)
 
 **엔드포인트**
 ```http
@@ -455,7 +432,7 @@ Authorization: Bearer {accessToken}
 
 ---
 
-### 8️⃣ 강의 삭제 (강사만)
+### 9️⃣ 강의 삭제 (강사만)
 
 **엔드포인트**
 ```http
@@ -871,19 +848,30 @@ Body: {
 ### 2. 강의 조회 및 수강 신청
 
 ```javascript
-// 1단계: 강의 목록 조회
-GET /api/courses?page=0&size=10
+// 1단계: 모든 강의 조회 (카테고리 구분 없음)
+GET /api/courses?page=0&size=100
+→ 모든 80개 강의를 한 페이지에 표시
 
-// 2단계: 강의 상세 정보 조회
+// 또는 검색 API로도 가능
+GET /api/courses/search?keyword=&page=0&size=100
+→ 동일하게 모든 강의 조회
+
+// 2단계: 특정 카테고리만 조회 (선택)
+GET /api/courses/category/DOMESTIC_STOCK
+→ 국내 주식 강의만 17개 조회
+
+// 3단계: 강의 상세 정보 조회
 GET /api/courses/1
+→ ID 1번 강의의 상세 정보
 
-// 3단계: 수강 신청
+// 4단계: 수강 신청
 POST /api/enrollments
 Headers: { Authorization: "Bearer {accessToken}" }
 Body: { "courseId": 1 }
+→ 강의 수강 시작
 ```
 
-### 3. 강의 시청 및 진행 상황 저장
+---
 
 ```javascript
 // 1단계: 강의 시청 시작

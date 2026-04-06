@@ -35,9 +35,12 @@ export default function LoginPage() {
 
     try {
       await authService.login(formData);
+      console.log('로그인 성공, 저장된 토큰:', authService.getAccessToken()?.substring(0, 20) + '...');
       refreshUser();
+      console.log('User context 업데이트 완료');
       router.push('/');
     } catch (err: any) {
+      console.error('로그인 에러:', err);
       setError(err.message || '로그인 실패');
     } finally {
       setIsLoading(false);
