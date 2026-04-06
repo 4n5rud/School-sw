@@ -52,6 +52,19 @@ class CourseService {
   }
 
   /**
+   * 강의 검색 및 필터링 조회
+   */
+  async searchCourses(
+    keyword: string,
+    category?: string,
+    page: number = 0,
+    size: number = 10
+  ): Promise<PaginatedResponse<Course>> {
+    const response = await apiClient.searchCourses(keyword, category, page, size);
+    return response.data;
+  }
+
+  /**
    * 강의 등록 (강사 전용)
    */
   async createCourse(data: CourseCreateRequest): Promise<Course> {

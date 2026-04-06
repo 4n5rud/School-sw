@@ -193,6 +193,30 @@ class ApiClient {
     );
   }
 
+  async searchCourses(
+    keyword: string,
+    category?: string,
+    page: number = 0,
+    size: number = 10
+  ): Promise<ApiResponse<PaginatedResponse<Course>>> {
+    const params = new URLSearchParams({
+      keyword,
+      page: page.toString(),
+      size: size.toString(),
+    });
+
+    if (category) {
+      params.append('category', category);
+    }
+
+    return this.makeRequest<PaginatedResponse<Course>>(
+      `/courses/search?${params.toString()}`,
+      {
+        method: 'GET',
+      }
+    );
+  }
+
   async createCourse(data: CourseCreateRequest): Promise<ApiResponse<Course>> {
     return this.makeRequest<Course>('/courses', {
       method: 'POST',

@@ -21,7 +21,8 @@ public class CourseSearchResponse {
     private Long id;
     private String title;
     private String description;
-    private String category;
+    private Course.CourseCategory category;
+    private String categoryDisplayName;
     private Integer price;
     private String thumbnailUrl;
     private Long instructorId;
@@ -52,6 +53,7 @@ public class CourseSearchResponse {
             .title(course.getTitle())
             .description(course.getDescription())
             .category(course.getCategory())
+            .categoryDisplayName(course.getCategory().getDisplayName())
             .price(course.getPrice())
             .thumbnailUrl(course.getThumbnailUrl())
             .instructorId(course.getInstructor().getId())
