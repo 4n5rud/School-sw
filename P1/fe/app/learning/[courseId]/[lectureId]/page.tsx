@@ -4,77 +4,103 @@ import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import { mockCourseDetail, mockCourses } from '@/lib/mockData';
 import { useParams } from 'next/navigation';
+import { courseService, lectureProgressService } from '@/lib/api';
+import { Course } from '@/lib/api/types';
 
 export default function LearningPage() {
   const params = useParams();
   const courseId = parseInt(params.courseId as string);
   const lectureId = parseInt(params.lectureId as string);
 
+  const [course, setCourse] = useState<Course | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(true);
   const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
+  const [duration, setDuration] = useState(300); // 기본 5분
   const [showMenu, setShowMenu] = useState(true);
   const progressInterval = useRef<NodeJS.Timeout | undefined>(undefined);
 
-  const course = mockCourseDetail[courseId];
-  const courseInfo = mockCourses.find((c) => c.id === courseId);
-
-  // Find current lecture
-  let currentLecture = null;
-  let currentSection = null;
-  let currentLectureIndex = 0;
-
-  if (course) {
-    for (let section of course.sections) {
-      for (let lecture of section.lectures) {
-        if (lecture.id === lectureId) {
-          currentLecture = lecture;
-          currentSection = section;
-          break;
-        }
-      }
-      if (currentLecture) break;
-    }
-  }
-
-  // Get all lectures in order
-  const allLectures = course
-    ? course.sections.flatMap((s) => s.lectures)
-    : [];
-  currentLectureIndex = allLectures.findIndex((l) => l.id === lectureId);
-
-  const nextLecture =
-    currentLectureIndex < allLectures.length - 1
-      ? allLectures[currentLectureIndex + 1]
-      : null;
-  const previousLecture =
-    currentLectureIndex > 0 ? allLectures[currentLectureIndex - 1] : null;
-
-  // Simulate video playback
+  // 강의 정보 로드
   useEffect(() => {
-    if (!isPlaying || !currentLecture) return;
+    const loadCourse = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const courseData = await courseService.getCourseById(courseId);
+        setCourse(courseData);
+      } catch (err: any) {
+        console.error('강의 조회 실패:', err);
+        setError(err.message || '강의를 불러오는데 실패했습니다');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadCourse();
+  }, [courseId]);
+
+  // 강의 진행 상황 저장 (매 10초마다)
+  useEffect(() => {
+    if (!course) return;
+
+    const saveProgress = async () => {
+      try {
+        await lectureProgressService.saveLectureProgress(lectureId, Math.floor(currentTime));
+      } catch (err) {
+        console.error('진행 상황 저장 실패:', err);
+      }
+    };
+
+    const saveInterval = setInterval(saveProgress, 10000); // 10초마다 저장
+    return () => clearInterval(saveInterval);
+  }, [lectureId, currentTime, course]);
+
+  // 비디오 재생 시뮬레이션
+  useEffect(() => {
+    if (!isPlaying) return;
 
     progressInterval.current = setInterval(() => {
       setCurrentTime((prev) => {
         const newTime = prev + 1;
-        if (newTime >= (currentLecture?.playTime || 0)) {
+        if (newTime >= duration) {
           setIsPlaying(false);
-          return currentLecture?.playTime || 0;
+          return duration;
         }
         return newTime;
       });
     }, 1000);
 
     return () => clearInterval(progressInterval.current);
-  }, [isPlaying, currentLecture]);
+  }, [isPlaying, duration]);
 
-  if (!course || !currentLecture || !currentSection || !courseInfo) {
+  if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-[#000000]">
-        <p className="text-gray-400 text-lg">강의를 찾을 수 없습니다</p>
-      </div>
+      <>
+        <Header />
+        <main className="min-h-screen bg-[#000000] flex items-center justify-center">
+          <p className="text-gray-400 text-xl">강의를 불러오는 중...</p>
+        </main>
+        <Footer />
+      </>
+    );
+  }
+
+  if (error || !course) {
+    return (
+      <>
+        <Header />
+        <main className="min-h-screen bg-[#000000] flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-red-400 text-lg mb-4">{error || '강의를 찾을 수 없습니다'}</p>
+            <Link href="/my-courses" className="inline-block text-[#FFD700] hover:text-yellow-400">
+              내 강의로 돌아가기
+            </Link>
+          </div>
+        </main>
+        <Footer />
+      </>
     );
   }
 
@@ -99,13 +125,13 @@ export default function LearningPage() {
                 {/* Video Player UI */}
                 <div className="absolute inset-0 bg-black/30 flex flex-col items-center justify-center">
                   <div className="text-center text-[#fffffc] space-y-6">
-                    <div className="text-6xl">play</div>
+                    <div className="text-6xl">▶</div>
                     <div>
                       <h2 className="text-2xl font-bold mb-2">
-                        {currentLecture.title}
+                        {course.title}
                       </h2>
                       <p className="text-[#beb7a4]">
-                        {formatTime(currentTime)} / {formatTime(currentLecture.playTime)}
+                        {formatTime(currentTime)} / {formatTime(duration)}
                       </p>
                     </div>
                   </div>
@@ -117,7 +143,7 @@ export default function LearningPage() {
                   <div className="space-y-2">
                     <div className="bg-[#2a2a2a] rounded-full h-1 cursor-pointer hover:h-2 transition group">
                       <div
-                        className="bg-[#ffffff] h-full rounded-full transition-all group-hover:bg-gray-300"
+                        className="bg-[#FFD700] h-full rounded-full transition-all group-hover:bg-yellow-300"
                         style={{ width: `${progressPercent}%` }}
                       ></div>
                     </div>
@@ -129,27 +155,27 @@ export default function LearningPage() {
                       {/* Play/Pause */}
                       <button
                         onClick={() => setIsPlaying(!isPlaying)}
-                        className="hover:scale-110 transition"
+                        className="hover:scale-110 transition text-xl"
                       >
-                        {isPlaying ? 'pause' : 'play'}
+                        {isPlaying ? '⏸' : '▶'}
                       </button>
 
                       {/* Time Display */}
                       <span className="text-sm font-medium">
-                        {formatTime(currentTime)} / {formatTime(currentLecture.playTime)}
+                        {formatTime(currentTime)} / {formatTime(duration)}
                       </span>
                     </div>
 
                     {/* Right Controls */}
                     <div className="flex items-center gap-4">
                       {/* Quality */}
-                      <button className="text-sm hover:text-[#beb7a4] transition">
+                      <button className="text-sm hover:text-[#FFD700] transition">
                         1080p
                       </button>
 
                       {/* Fullscreen */}
                       <button className="hover:scale-110 transition text-lg">
-                        fullscreen
+                        ⛶
                       </button>
                     </div>
                   </div>
@@ -161,38 +187,38 @@ export default function LearningPage() {
             <div className="bg-[#1a1a1a] border-b border-[#2a2a2a] p-6 space-y-4">
               <div>
                 <h1 className="text-2xl font-bold text-[#fffffc] mb-2">
-                  {currentLecture.title}
+                  강의 제목 - Lecture {lectureId}
                 </h1>
                 <p className="text-[#beb7a4]">
-                  {currentSection.title} • {formatTime(currentLecture.playTime)}
+                  {course.title} • {formatTime(duration)}
                 </p>
               </div>
 
               {/* Navigation Buttons */}
               <div className="flex gap-3">
-                {previousLecture && (
+                {lectureId > 1 && (
                   <Link
-                    href={`/learning/${courseId}/${previousLecture.id}`}
+                    href={`/learning/${courseId}/${lectureId - 1}`}
                     className="px-4 py-2 bg-[#2a2a2a] text-[#fffffc] rounded-lg hover:bg-[#3a3a3a] transition text-sm font-medium"
                   >
-                    angle-left 이전 강의
+                    ◀ 이전 강의
                   </Link>
                 )}
-                {nextLecture && (
-                  <Link
-                    href={`/learning/${courseId}/${nextLecture.id}`}
-                    className="px-4 py-2 bg-[#ffffff] text-[#000000] rounded-lg hover:bg-gray-200 transition text-sm font-medium"
-                  >
-                    다음 강의 angle-right
-                  </Link>
-                )}
+                <Link
+                  href={`/learning/${courseId}/${lectureId + 1}`}
+                  className="px-4 py-2 bg-[#FFD700] text-[#000000] rounded-lg hover:bg-yellow-400 transition text-sm font-medium"
+                >
+                  다음 강의 ▶
+                </Link>
               </div>
             </div>
           </div>
 
           {/* Sidebar - Curriculum */}
           <div
-            className={`${showMenu ? 'w-80' : 'w-0'} bg-[#1a1a1a] border-l border-[#2a2a2a] overflow-hidden transition-all duration-300 flex flex-col`}
+            className={`${
+              showMenu ? 'w-80' : 'w-0'
+            } bg-[#1a1a1a] border-l border-[#2a2a2a] overflow-hidden transition-all duration-300 flex flex-col`}
           >
             {/* Header */}
             <div className="p-4 border-b border-[#2a2a2a] flex items-center justify-between">
@@ -201,7 +227,7 @@ export default function LearningPage() {
                 onClick={() => setShowMenu(!showMenu)}
                 className="text-[#beb7a4] hover:text-[#fffffc]"
               >
-                close
+                ✕
               </button>
             </div>
 
@@ -211,52 +237,40 @@ export default function LearningPage() {
               className="p-4 border-b border-[#2a2a2a] hover:bg-[#2a2a2a] transition"
             >
               <p className="text-sm text-[#beb7a4] hover:text-[#fffffc] font-medium">
-                {courseInfo.title}
+                {course.title}
               </p>
             </Link>
 
-            {/* Sections & Lectures */}
+            {/* Lectures List */}
             <div className="flex-1 overflow-y-auto">
-              {course.sections.map((section) => (
-                <div key={section.id}>
-                  {/* Section */}
-                  <div className="px-4 py-3 bg-[#2a2a2a]/50 border-b border-[#2a2a2a]">
-                    <p className="text-xs font-semibold text-[#beb7a4] uppercase tracking-wider">
-                      {section.title}
-                    </p>
+              {[1, 2, 3, 4, 5].map((idx) => (
+                <Link
+                  key={idx}
+                  href={`/learning/${courseId}/${idx}`}
+                  className={`block px-4 py-3 border-b border-[#2a2a2a] hover:bg-[#2a2a2a] transition ${
+                    idx === lectureId ? 'bg-gray-800 border-l-2 border-l-[#FFD700]' : ''
+                  }`}
+                >
+                  <div className="flex gap-3">
+                    <span className="text-[#beb7a4] text-sm min-w-6">
+                      {idx === lectureId ? '▶' : idx}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <p
+                        className={`text-sm line-clamp-2 ${
+                          idx === lectureId
+                            ? 'text-[#fffffc] font-semibold'
+                            : 'text-[#beb7a4]'
+                        }`}
+                      >
+                        Section {Math.ceil(idx / 2)} - Lecture {idx}
+                      </p>
+                      <p className="text-xs text-[#beb7a4]/70 mt-1">
+                        {formatTime(duration)}
+                      </p>
+                    </div>
                   </div>
-
-                  {/* Lectures */}
-                  {section.lectures.map((lecture, idx) => (
-                    <Link
-                      key={lecture.id}
-                      href={`/learning/${courseId}/${lecture.id}`}
-                      className={`block px-4 py-3 border-b border-[#2a2a2a] hover:bg-[#2a2a2a] transition ${
-                        lecture.id === lectureId ? 'bg-gray-800 border-l-2 border-l-[#ffffff]' : ''
-                      }`}
-                    >
-                      <div className="flex gap-3">
-                        <span className="text-[#beb7a4] text-sm min-w-6">
-                          {lecture.id === lectureId ? 'play' : idx + 1}
-                        </span>
-                        <div className="flex-1 min-w-0">
-                          <p
-                            className={`text-sm line-clamp-2 ${
-                              lecture.id === lectureId
-                                ? 'text-[#fffffc] font-semibold'
-                                : 'text-[#beb7a4]'
-                            }`}
-                          >
-                            {lecture.title}
-                          </p>
-                          <p className="text-xs text-[#beb7a4]/70 mt-1">
-                            {formatTime(lecture.playTime)}
-                          </p>
-                        </div>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
+                </Link>
               ))}
             </div>
 

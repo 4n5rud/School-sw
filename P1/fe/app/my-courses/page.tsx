@@ -1,22 +1,74 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useAuth } from '@/lib/context/AuthContext';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import { mockMyCoures } from '@/lib/mockData';
+import { enrollmentService } from '@/lib/api';
+import { Enrollment } from '@/lib/api/types';
 
 export default function MyCoursesPage() {
-  const activeCourses = mockMyCoures.filter((c) => !c.isCompleted);
-  const completedCourses = mockMyCoures.filter((c) => c.isCompleted);
+  const { isLoggedIn, isLoading: authLoading } = useAuth();
+  const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const totalProgress =
-    mockMyCoures.length > 0
-      ? Math.round(
-          mockMyCoures.reduce((sum, c) => sum + c.progressPercentage, 0) /
-            mockMyCoures.length,
-        )
-      : 0;
+  // 수강 목록 조회
+  useEffect(() => {
+    if (!isLoggedIn) {
+      setIsLoading(false);
+      return;
+    }
 
+    const loadEnrollments = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const response = await enrollmentService.getMyEnrollments(0, 100);
+        setEnrollments(response.content);
+      } catch (err: any) {
+        console.error('수강 목록 조회 실패:', err);
+        setError(err.message || '수강 목록을 불러오는데 실패했습니다');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadEnrollments();
+  }, [isLoggedIn]);
+
+  const activeCourses = enrollments.filter((e) => !e.isCompleted);
+  const completedCourses = enrollments.filter((e) => e.isCompleted);
+
+  if (authLoading || isLoading) {
+    return (
+      <>
+        <Header />
+        <main className="min-h-screen bg-[#000000] flex items-center justify-center">
+          <p className="text-gray-400 text-xl">로딩 중...</p>
+        </main>
+        <Footer />
+      </>
+    );
+  }
+
+  if (!isLoggedIn) {
+    return (
+      <>
+        <Header />
+        <main className="min-h-screen bg-[#000000] flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-gray-400 text-xl mb-4">로그인이 필요합니다</p>
+            <Link href="/auth/login" className="inline-block bg-[#FFD700] text-[#000000] px-6 py-2 rounded-lg font-medium hover:bg-yellow-400">
+              로그인하기
+            </Link>
+          </div>
+        </main>
+        <Footer />
+      </>
+    );
+  }
   return (
     <>
       <Header />
@@ -26,27 +78,30 @@ export default function MyCoursesPage() {
           <div className="space-y-6">
             <h1 className="text-4xl font-bold text-[#ffffff]">내 강의실</h1>
 
-            {/* Overall Progress */}
+            {/* Learning Stats */}
             <div className="bg-[#1a1a1a] rounded-lg shadow-md p-8 space-y-4 border border-gray-800">
-              <p className="text-gray-400 font-medium">전체 학습 진도</p>
-              <div className="flex items-end gap-6">
+              <div className="grid grid-cols-3 gap-6">
                 <div>
-                  <p className="text-5xl font-bold text-[#ffffff]">{totalProgress}%</p>
+                  <p className="text-gray-400 text-sm font-medium mb-2">수강 중</p>
+                  <p className="text-4xl font-bold text-[#FFD700]">{activeCourses.length}</p>
                 </div>
-                <div className="flex-1">
-                  <div className="w-full bg-gray-800 rounded-full h-4">
-                    <div
-                      className="bg-[#ffffff] h-4 rounded-full transition-all duration-500"
-                      style={{ width: `${totalProgress}%` }}
-                    ></div>
-                  </div>
-                  <p className="text-sm text-gray-400 mt-2">
-                    {mockMyCoures.length}개 강의 수강 중
-                  </p>
+                <div>
+                  <p className="text-gray-400 text-sm font-medium mb-2">완강</p>
+                  <p className="text-4xl font-bold text-[#ffffff]">{completedCourses.length}</p>
+                </div>
+                <div>
+                  <p className="text-gray-400 text-sm font-medium mb-2">전체</p>
+                  <p className="text-4xl font-bold text-gray-400">{enrollments.length}</p>
                 </div>
               </div>
             </div>
           </div>
+
+          {error && (
+            <div className="bg-red-900/20 border border-red-700 rounded-lg p-4 text-red-400">
+              {error}
+            </div>
+          )}
 
           {/* Active Courses */}
           <div className="space-y-6">
@@ -56,50 +111,33 @@ export default function MyCoursesPage() {
 
             {activeCourses.length > 0 ? (
               <div className="grid md:grid-cols-3 gap-6">
-                {activeCourses.map((course) => (
-                  <div key={course.id} className="bg-[#1a1a1a] rounded-lg shadow-sm overflow-hidden hover:shadow-lg transition border border-gray-800">
+                {activeCourses.map((enrollment) => (
+                  <div key={enrollment.id} className="bg-[#1a1a1a] rounded-lg shadow-sm overflow-hidden hover:shadow-lg transition border border-gray-800">
                     {/* Thumbnail */}
-                    <div className="h-32 bg-gradient-to-br from-gray-700 to-gray-800"></div>
+                    <div className="h-32 bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center">
+                      <span className="text-gray-500">📚</span>
+                    </div>
 
                     {/* Content */}
                     <div className="p-4 space-y-4">
                       {/* Title */}
                       <div>
                         <h3 className="font-bold text-base line-clamp-2 text-[#ffffff]">
-                          {course.title}
+                          {enrollment.courseName}
                         </h3>
-                        <p className="text-sm text-gray-400 mt-1">
-                          {course.instructor}
-                        </p>
                       </div>
 
                       {/* Date */}
                       <p className="text-xs text-gray-500">
-                        수강 시작: {new Date(course.enrolledAt).toLocaleDateString()}
+                        수강 시작: {new Date(enrollment.enrolledAt).toLocaleDateString('ko-KR')}
                       </p>
-
-                      {/* Progress Bar */}
-                      <div className="space-y-2">
-                        <div className="flex justify-between items-center text-xs">
-                          <span className="text-gray-400">진도</span>
-                          <span className="font-semibold text-[#ffffff]">{course.progressPercentage}%</span>
-                        </div>
-                        <div className="w-full bg-gray-800 rounded-full h-2">
-                          <div
-                            className="bg-[#ffffff] h-2 rounded-full transition-all"
-                            style={{ width: `${course.progressPercentage}%` }}
-                          ></div>
-                        </div>
-                      </div>
 
                       {/* Action Button */}
                       <Link
-                        href={`/learning/${course.courseId}/1`}
-                        className="block w-full bg-[#ffffff] text-[#000000] text-center py-2 rounded-lg font-medium hover:bg-gray-200 transition text-sm"
+                        href={`/learning/${enrollment.courseId}`}
+                        className="block w-full bg-[#FFD700] text-[#000000] text-center py-2 rounded-lg font-medium hover:bg-yellow-400 transition text-sm"
                       >
-                        {course.progressPercentage === 0
-                          ? '강의 시작'
-                          : '계속 학습'}
+                        학습하기
                       </Link>
                     </div>
                   </div>
@@ -126,24 +164,23 @@ export default function MyCoursesPage() {
               </h2>
 
               <div className="grid md:grid-cols-3 gap-6">
-                {completedCourses.map((course) => (
+                {completedCourses.map((enrollment) => (
                   <div
-                    key={course.id}
+                    key={enrollment.id}
                     className="bg-[#1a1a1a] rounded-lg shadow-sm overflow-hidden hover:shadow-lg transition opacity-75 border border-gray-800"
                   >
                     {/* Thumbnail */}
-                    <div className="h-32 bg-gradient-to-br from-gray-700 to-gray-800"></div>
+                    <div className="h-32 bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center">
+                      <span className="text-gray-500">✓</span>
+                    </div>
 
                     {/* Content */}
                     <div className="p-4 space-y-4">
                       {/* Title */}
                       <div>
                         <h3 className="font-bold text-base line-clamp-2 text-[#ffffff]">
-                          {course.title}
+                          {enrollment.courseName}
                         </h3>
-                        <p className="text-sm text-gray-400 mt-1">
-                          {course.instructor}
-                        </p>
                       </div>
 
                       {/* Badge */}
@@ -152,10 +189,10 @@ export default function MyCoursesPage() {
                         <span>완강</span>
                       </div>
 
-                      {/* Action Button */}
-                      <button className="w-full bg-gray-800 text-[#ffffff] py-2 rounded-lg font-medium hover:bg-gray-700 transition text-sm">
-                        다시 보기
-                      </button>
+                      {/* Completion Date */}
+                      <p className="text-xs text-gray-500">
+                        등록: {new Date(enrollment.enrolledAt).toLocaleDateString('ko-KR')}
+                      </p>
                     </div>
                   </div>
                 ))}

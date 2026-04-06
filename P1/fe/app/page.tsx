@@ -1,16 +1,39 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import CourseCard from '@/components/CourseCard';
-import { mockCourses } from '@/lib/mockData';
+import { courseService } from '@/lib/api';
+import { Course } from '@/lib/api/types';
 
 type CategoryType = 'ALL' | 'DOMESTIC_STOCK' | 'OVERSEAS_STOCK' | 'CRYPTO' | 'NFT' | 'ETF' | 'FUTURES';
 
 export default function Home() {
   const [searchKeyword, setSearchKeyword] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<CategoryType>('ALL');
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // 강의 목록 조회
+  useEffect(() => {
+    const loadCourses = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const response = await courseService.getAllCourses(0, 100);
+        setCourses(response.content);
+      } catch (err: any) {
+        console.error('강의 목록 조회 실패:', err);
+        setError(err.message || '강의를 불러오는데 실패했습니다');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadCourses();
+  }, []);
 
   const categories = [
     { id: 'all', name: '전체', icon: 'apps', color: 'bg-gray-700' },
@@ -22,10 +45,10 @@ export default function Home() {
     { id: 'futures', name: '선물투자', icon: 'lightning', color: 'bg-red-600' },
   ];
 
-  const filteredCourses = mockCourses.filter((course) => {
+  const filteredCourses = courses.filter((course) => {
     const matchesSearch =
       course.title.toLowerCase().includes(searchKeyword.toLowerCase()) ||
-      course.instructor.toLowerCase().includes(searchKeyword.toLowerCase());
+      course.instructor.nickname.toLowerCase().includes(searchKeyword.toLowerCase());
     const matchesCategory =
       selectedCategory === 'ALL' || course.category === selectedCategory;
     return matchesSearch && matchesCategory;
@@ -122,21 +145,34 @@ export default function Home() {
         {/* Results */}
         <section className="bg-[#000000] max-w-7xl mx-auto px-4 py-12">
           <div className="space-y-8">
-            <p className="text-gray-400">
-              검색 결과: <span className="font-semibold text-[#ffffff]">{filteredCourses.length}</span>개의 강의
-            </p>
-
-            {filteredCourses.length > 0 ? (
-              <div className="grid md:grid-cols-4 sm:grid-cols-2 grid-cols-1 gap-6">
-                {filteredCourses.map((course) => (
-                  <CourseCard key={course.id} course={course} />
-                ))}
+            {isLoading ? (
+              <div className="text-center py-20">
+                <p className="text-xl text-gray-400">강의를 불러오는 중입니다...</p>
+              </div>
+            ) : error ? (
+              <div className="text-center py-20">
+                <p className="text-2xl text-red-400 mb-4">오류가 발생했습니다</p>
+                <p className="text-gray-500">{error}</p>
               </div>
             ) : (
-              <div className="text-center py-20">
-                <p className="text-2xl text-gray-400 mb-4">검색 결과가 없습니다</p>
-                <p className="text-gray-500">다른 검색어를 시도해보세요</p>
-              </div>
+              <>
+                <p className="text-gray-400">
+                  검색 결과: <span className="font-semibold text-[#ffffff]">{filteredCourses.length}</span>개의 강의
+                </p>
+
+                {filteredCourses.length > 0 ? (
+                  <div className="grid md:grid-cols-4 sm:grid-cols-2 grid-cols-1 gap-6">
+                    {filteredCourses.map((course) => (
+                      <CourseCard key={course.id} course={course} />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-20">
+                    <p className="text-2xl text-gray-400 mb-4">검색 결과가 없습니다</p>
+                    <p className="text-gray-500">다른 검색어를 시도해보세요</p>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </section>
