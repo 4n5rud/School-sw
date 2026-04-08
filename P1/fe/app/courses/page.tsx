@@ -5,7 +5,7 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import CourseCard from '@/components/CourseCard';
 import { courseService } from '@/lib/api';
-import { Course } from '@/lib/api/types';
+import { Course, PaginatedResponse } from '@/lib/api/types';
 
 type CategoryType = 'ALL' | 'DOMESTIC_STOCK' | 'OVERSEAS_STOCK' | 'CRYPTO' | 'NFT' | 'ETF' | 'FUTURES';
 
@@ -13,17 +13,38 @@ export default function CoursesPage() {
   const [searchKeyword, setSearchKeyword] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<CategoryType>('ALL');
   const [courses, setCourses] = useState<Course[]>([]);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalElements, setTotalElements] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // 강의 목록 조회
+  const PAGE_SIZE = 12;
+
+  // 검색/카테고리 필터 변경 시 API 호출
   useEffect(() => {
     const loadCourses = async () => {
       try {
         setIsLoading(true);
         setError(null);
-        const response = await courseService.getAllCourses(0, 100);
+        setCurrentPage(0); // 필터 변경 시 첫 페이지로 리셋
+
+        let response: PaginatedResponse<Course>;
+
+        if (selectedCategory !== 'ALL') {
+          // 카테고리 필터 적용
+          response = await courseService.getCoursesByCategory(selectedCategory, 0, PAGE_SIZE);
+        } else if (searchKeyword.trim()) {
+          // 검색 적용
+          response = await courseService.searchCourses(searchKeyword, undefined, 0, PAGE_SIZE);
+        } else {
+          // 전체 조회
+          response = await courseService.getAllCourses(0, PAGE_SIZE);
+        }
+
         setCourses(response.content);
+        setTotalPages(response.totalPages || 1);
+        setTotalElements(response.totalElements || 0);
       } catch (err: any) {
         console.error('강의 목록 조회 실패:', err);
         setError(err.message || '강의를 불러오는데 실패했습니다');
@@ -33,7 +54,40 @@ export default function CoursesPage() {
     };
 
     loadCourses();
-  }, []);
+  }, [searchKeyword, selectedCategory]);
+
+  // 페이지 변경 시 API 호출
+  useEffect(() => {
+    if (currentPage === 0) return; // 초기 로드는 위의 useEffect에서 처리
+
+    const loadPage = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+
+        let response: PaginatedResponse<Course>;
+
+        if (selectedCategory !== 'ALL') {
+          response = await courseService.getCoursesByCategory(selectedCategory, currentPage, PAGE_SIZE);
+        } else if (searchKeyword.trim()) {
+          response = await courseService.searchCourses(searchKeyword, undefined, currentPage, PAGE_SIZE);
+        } else {
+          response = await courseService.getAllCourses(currentPage, PAGE_SIZE);
+        }
+
+        setCourses(response.content);
+        setTotalPages(response.totalPages || 1);
+        setTotalElements(response.totalElements || 0);
+      } catch (err: any) {
+        console.error('페이지 로드 실패:', err);
+        setError(err.message || '페이지를 불러오는데 실패했습니다');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadPage();
+  }, [currentPage]);
 
   const categories = [
     { id: 'all', name: '전체', label: 'ALL' as CategoryType },
@@ -45,14 +99,10 @@ export default function CoursesPage() {
     { id: 'futures', name: '선물투자', label: 'FUTURES' as CategoryType },
   ];
 
-  const filteredCourses = courses.filter((course) => {
-    const matchesSearch =
-      course.title.toLowerCase().includes(searchKeyword.toLowerCase()) ||
-      course.instructor.nickname.toLowerCase().includes(searchKeyword.toLowerCase());
-    const matchesCategory =
-      selectedCategory === 'ALL' || course.category === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
+  const handleCategoryClick = (categoryLabel: CategoryType) => {
+    setSelectedCategory(categoryLabel);
+    setCurrentPage(0);
+  };
 
   return (
     <>
@@ -82,7 +132,7 @@ export default function CoursesPage() {
               {categories.map((cat) => (
                 <button
                   key={cat.id}
-                  onClick={() => setSelectedCategory(cat.label)}
+                  onClick={() => handleCategoryClick(cat.label)}
                   className={`px-6 py-2 rounded-full font-medium transition ${
                     selectedCategory === cat.label
                       ? 'bg-[#ffffff] text-[#000000]'
@@ -111,15 +161,50 @@ export default function CoursesPage() {
             ) : (
               <>
                 <p className="text-gray-400">
-                  검색 결과: <span className="font-semibold text-[#ffffff]">{filteredCourses.length}</span>개의 강의
+                  검색 결과: <span className="font-semibold text-[#ffffff]">{totalElements}</span>개의 강의
                 </p>
 
-                {filteredCourses.length > 0 ? (
-                  <div className="grid md:grid-cols-4 sm:grid-cols-2 grid-cols-1 gap-6">
-                    {filteredCourses.map((course) => (
-                      <CourseCard key={course.id} course={course} />
-                    ))}
-                  </div>
+                {courses.length > 0 ? (
+                  <>
+                    <div className="grid md:grid-cols-4 sm:grid-cols-2 grid-cols-1 gap-6">
+                      {courses.map((course) => (
+                        <CourseCard key={course.id} course={course} />
+                      ))}
+                    </div>
+
+                    {/* Pagination Controls */}
+                    <div className="flex items-center justify-center gap-4 pt-8 border-t border-gray-800">
+                      <button
+                        onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
+                        disabled={currentPage === 0}
+                        className={`px-6 py-2 rounded-lg font-medium transition ${
+                          currentPage === 0
+                            ? 'bg-gray-800 text-gray-500 cursor-not-allowed'
+                            : 'bg-[#ffffff] text-[#000000] hover:bg-gray-200'
+                        }`}
+                      >
+                        이전
+                      </button>
+
+                      <span className="text-gray-400">
+                        <span className="font-semibold text-[#ffffff]">{currentPage + 1}</span>
+                        <span> / </span>
+                        <span className="font-semibold text-[#ffffff]">{totalPages}</span>
+                      </span>
+
+                      <button
+                        onClick={() => setCurrentPage(Math.min(totalPages - 1, currentPage + 1))}
+                        disabled={currentPage === totalPages - 1}
+                        className={`px-6 py-2 rounded-lg font-medium transition ${
+                          currentPage === totalPages - 1
+                            ? 'bg-gray-800 text-gray-500 cursor-not-allowed'
+                            : 'bg-[#ffffff] text-[#000000] hover:bg-gray-200'
+                        }`}
+                      >
+                        다음
+                      </button>
+                    </div>
+                  </>
                 ) : (
                   <div className="text-center py-20">
                     <p className="text-2xl text-gray-500 mb-4">검색 결과가 없습니다</p>

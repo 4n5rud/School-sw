@@ -19,6 +19,13 @@ import {
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
 
+console.log('[API Client Init]', {
+  NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
+  API_BASE_URL,
+  isProduction: process.env.NODE_ENV === 'production',
+  nodeEnv: process.env.NODE_ENV,
+});
+
 interface RequestOptions extends RequestInit {
   includeAuth?: boolean;
 }
@@ -65,6 +72,12 @@ class ApiClient {
       data = await response.text();
     }
 
+    console.log(`[API Response] Status: ${response.status}`, {
+      statusText: response.statusText,
+      contentType,
+      dataLength: JSON.stringify(data).length,
+    });
+
     if (!response.ok) {
       const token = this.getAccessToken();
       const errorLog = {
@@ -75,7 +88,23 @@ class ApiClient {
         tokenLength: token?.length || 0,
       };
 
-      console.error('[API Error]', response.status, errorLog);
+      console.error('[API Error Response]', response.status, errorLog);
+      console.error('[API Error Data]', data);
+
+      // ⭐ 401 Unauthorized 처리: 토큰 만료 또는 유효하지 않은 토큰
+      if (response.status === 401) {
+        console.warn('[API Auth Error] 401 Unauthorized - 토큰이 유효하지 않습니다');
+        // 토큰 삭제
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('refreshToken');
+          localStorage.removeItem('user');
+          console.log('[API Cleanup] 토큰 및 사용자 정보 삭제 완료');
+          
+          // 로그인 페이지로 리다이렉트
+          window.location.href = '/auth/login';
+        }
+      }
 
       throw errorLog as ApiError;
     }
@@ -91,23 +120,47 @@ class ApiClient {
     const url = `${this.baseUrl}${endpoint}`;
     const headers = this.getHeaders(includeAuth);
 
+    console.log('[API Request]', {
+      method: fetchOptions.method || 'GET',
+      fullUrl: url,
+      endpoint,
+      baseUrl: this.baseUrl,
+      includeAuth,
+      hasBody: !!fetchOptions.body,
+    });
+
     // 디버깅: 인증이 필요한 요청인 경우 토큰 상태 로깅
     if (includeAuth) {
       const token = this.getAccessToken();
       const authHeader = (headers as any)['Authorization'];
-      console.log(`[API] ${fetchOptions.method} ${endpoint}`, {
+      console.log(`[API Auth Check] ${fetchOptions.method} ${endpoint}`, {
         hasToken: !!token,
         tokenLength: token?.length || 0,
         authHeader: authHeader ? '포함됨' : '없음',
       });
     }
 
-    const response = await fetch(url, {
-      ...fetchOptions,
-      headers,
-    });
+    try {
+      const response = await fetch(url, {
+        ...fetchOptions,
+        headers,
+      });
 
-    return this.handleResponse<ApiResponse<T>>(response);
+      console.log('[API Fetch Completed]', {
+        url,
+        status: response.status,
+        ok: response.ok,
+      });
+
+      return this.handleResponse<ApiResponse<T>>(response);
+    } catch (error) {
+      console.error('[API Fetch Failed]', {
+        url,
+        error: error instanceof Error ? error.message : String(error),
+        type: error instanceof TypeError ? 'TypeError' : 'Other',
+      });
+      throw error;
+    }
   }
 
   // ================================================
@@ -153,14 +206,14 @@ class ApiClient {
   // ================================================
   async getCourses(
     page: number = 0,
-    size: number = 10,
-    sort: string = 'id,desc'
+    size: number = 10
   ): Promise<ApiResponse<PaginatedResponse<Course>>> {
     const params = new URLSearchParams({
       page: page.toString(),
       size: size.toString(),
-      sort,
     });
+
+    console.log('[API Call] getCourses', { page, size, queryString: params.toString() });
 
     return this.makeRequest<PaginatedResponse<Course>>(
       `/courses?${params.toString()}`,
@@ -171,6 +224,8 @@ class ApiClient {
   }
 
   async getCourseById(courseId: number): Promise<ApiResponse<Course>> {
+    console.log('[API Call] getCourseById', { courseId });
+
     return this.makeRequest<Course>(`/courses/${courseId}`, {
       method: 'GET',
     });
@@ -185,6 +240,8 @@ class ApiClient {
       page: page.toString(),
       size: size.toString(),
     });
+
+    console.log('[API Call] getCoursesByCategory', { category, page, size });
 
     return this.makeRequest<PaginatedResponse<Course>>(
       `/courses/category/${category}?${params.toString()}`,
@@ -203,6 +260,8 @@ class ApiClient {
       page: page.toString(),
       size: size.toString(),
     });
+
+    console.log('[API Call] getCoursesByInstructor', { instructorId, page, size });
 
     return this.makeRequest<PaginatedResponse<Course>>(
       `/courses/instructor/${instructorId}?${params.toString()}`,
@@ -227,6 +286,8 @@ class ApiClient {
     if (category) {
       params.append('category', category);
     }
+
+    console.log('[API Call] searchCourses', { keyword, category, page, size });
 
     return this.makeRequest<PaginatedResponse<Course>>(
       `/courses/search?${params.toString()}`,

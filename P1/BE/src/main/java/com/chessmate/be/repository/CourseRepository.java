@@ -20,23 +20,25 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
     Optional<Course> findByIdWithInstructor(@Param("id") Long id);
 
     /**
-     * Enum 기반 카테고리로 강의 조회
+     * 전체 강의 조회 (JOIN FETCH - instructor 정보 포함)
      */
-    Page<Course> findByCategory(Course.CourseCategory category, Pageable pageable);
+    @Query("SELECT c FROM Course c JOIN FETCH c.instructor ORDER BY c.createdAt DESC")
+    Page<Course> findAll(Pageable pageable);
 
     /**
-     * 강사별 강의 조회
+     * Enum 기반 카테고리로 강의 조회 (JOIN FETCH)
      */
-    Page<Course> findByInstructorId(Long instructorId, Pageable pageable);
+    @Query("SELECT c FROM Course c JOIN FETCH c.instructor WHERE c.category = :category ORDER BY c.createdAt DESC")
+    Page<Course> findByCategory(@Param("category") Course.CourseCategory category, Pageable pageable);
 
     /**
      * 강사별 강의 조회 (JOIN FETCH)
      */
-    @Query("SELECT c FROM Course c JOIN FETCH c.instructor WHERE c.instructor.id = :instructorId")
-    Page<Course> findByInstructorIdWithInstructor(@Param("instructorId") Long instructorId, Pageable pageable);
+    @Query("SELECT c FROM Course c JOIN FETCH c.instructor WHERE c.instructor.id = :instructorId ORDER BY c.createdAt DESC")
+    Page<Course> findByInstructorId(@Param("instructorId") Long instructorId, Pageable pageable);
 
     /**
-     * 키워드와 카테고리로 강의 검색 (Enum 기반)
+     * 키워드와 카테고리로 강의 검색 (Enum 기반, JOIN FETCH)
      */
     @Query("""
         SELECT c FROM Course c

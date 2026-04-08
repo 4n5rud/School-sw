@@ -19,6 +19,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 /**
  * 강의 서비스
  * 강의 CRUD 및 권한 관리 기능 제공
@@ -100,24 +104,44 @@ public class CourseService {
 
     /**
      * 강의 목록 조회 (페이지네이션)
-     * 
+     * N+1 쿼리 문제 해결 - 배치 조회 사용
+     *
      * @param pageable Spring Data의 Pageable (page, size, sort)
      * @return 강의 페이지 정보
      */
     public Page<CourseResponse> getAllCourses(Pageable pageable) {
         log.debug("Get all courses - page: {}, size: {}", pageable.getPageNumber(), pageable.getPageSize());
         
+        // 모든 강의와 강사 정보를 한 번에 조회
         Page<Course> courses = courseRepository.findAll(pageable);
         
+        // 강의 ID 목록 추출
+        List<Long> courseIds = courses.getContent().stream()
+                .map(Course::getId)
+                .toList();
+
+        // 모든 강의의 수강생 수를 한 번의 쿼리로 조회
+        Map<Long, Long> enrollmentCounts = new HashMap<>();
+        if (!courseIds.isEmpty()) {
+            List<java.util.Map<String, Object>> results = enrollmentRepository.countEnrollmentsByCourseIds(courseIds);
+            for (java.util.Map<String, Object> result : results) {
+                Long courseId = ((Number) result.get("courseId")).longValue();
+                Long count = ((Number) result.get("count")).longValue();
+                enrollmentCounts.put(courseId, count);
+            }
+        }
+
+        // CourseResponse로 변환
         return courses.map(course -> {
-            Integer studentCount = enrollmentRepository.countByCourseId(course.getId());
+            Integer studentCount = enrollmentCounts.getOrDefault(course.getId(), 0L).intValue();
             return CourseResponse.from(course, studentCount);
         });
     }
 
     /**
      * 카테고리별 강의 목록 조회
-     * 
+     * N+1 쿼리 문제 해결 - 배치 조회 사용
+     *
      * @param category 강의 카테고리 (Enum)
      * @param pageable 페이지네이션 정보
      * @return 강의 페이지 정보
@@ -127,8 +151,24 @@ public class CourseService {
         
         Page<Course> courses = courseRepository.findByCategory(category, pageable);
         
+        // 강의 ID 목록 추출
+        List<Long> courseIds = courses.getContent().stream()
+                .map(Course::getId)
+                .toList();
+
+        // 모든 강의의 수강생 수를 한 번의 쿼리로 조회
+        Map<Long, Long> enrollmentCounts = new HashMap<>();
+        if (!courseIds.isEmpty()) {
+            List<java.util.Map<String, Object>> results = enrollmentRepository.countEnrollmentsByCourseIds(courseIds);
+            for (java.util.Map<String, Object> result : results) {
+                Long courseId = ((Number) result.get("courseId")).longValue();
+                Long count = ((Number) result.get("count")).longValue();
+                enrollmentCounts.put(courseId, count);
+            }
+        }
+
         return courses.map(course -> {
-            Integer studentCount = enrollmentRepository.countByCourseId(course.getId());
+            Integer studentCount = enrollmentCounts.getOrDefault(course.getId(), 0L).intValue();
             return CourseResponse.from(course, studentCount);
         });
     }
@@ -154,7 +194,8 @@ public class CourseService {
 
     /**
      * 강사별 강의 목록 조회
-     * 
+     * N+1 쿼리 문제 해결 - 배치 조회 사용
+     *
      * @param instructorId 강사 ID
      * @param pageable 페이지네이션 정보
      * @return 강의 페이지 정보
@@ -164,14 +205,31 @@ public class CourseService {
         
         Page<Course> courses = courseRepository.findByInstructorId(instructorId, pageable);
         
+        // 강의 ID 목록 추출
+        List<Long> courseIds = courses.getContent().stream()
+                .map(Course::getId)
+                .toList();
+
+        // 모든 강의의 수강생 수를 한 번의 쿼리로 조회
+        Map<Long, Long> enrollmentCounts = new HashMap<>();
+        if (!courseIds.isEmpty()) {
+            List<java.util.Map<String, Object>> results = enrollmentRepository.countEnrollmentsByCourseIds(courseIds);
+            for (java.util.Map<String, Object> result : results) {
+                Long courseId = ((Number) result.get("courseId")).longValue();
+                Long count = ((Number) result.get("count")).longValue();
+                enrollmentCounts.put(courseId, count);
+            }
+        }
+
         return courses.map(course -> {
-            Integer studentCount = enrollmentRepository.countByCourseId(course.getId());
+            Integer studentCount = enrollmentCounts.getOrDefault(course.getId(), 0L).intValue();
             return CourseResponse.from(course, studentCount);
         });
     }
 
     /**
      * 강의 검색 (키워드 + 카테고리)
+     * N+1 쿼리 문제 해결 - 배치 조회 사용
      *
      * @param keyword 검색 키워드 (제목 기반)
      * @param category 카테고리 필터 (Enum 기반, null이면 전체)
@@ -207,8 +265,24 @@ public class CourseService {
             pageable
         );
 
+        // 강의 ID 목록 추출
+        List<Long> courseIds = courses.getContent().stream()
+                .map(Course::getId)
+                .toList();
+
+        // 모든 강의의 수강생 수를 한 번의 쿼리로 조회
+        Map<Long, Long> enrollmentCounts = new HashMap<>();
+        if (!courseIds.isEmpty()) {
+            List<java.util.Map<String, Object>> results = enrollmentRepository.countEnrollmentsByCourseIds(courseIds);
+            for (java.util.Map<String, Object> result : results) {
+                Long courseId = ((Number) result.get("courseId")).longValue();
+                Long count = ((Number) result.get("count")).longValue();
+                enrollmentCounts.put(courseId, count);
+            }
+        }
+
         return courses.map(course -> {
-            Integer studentCount = enrollmentRepository.countByCourseId(course.getId());
+            Integer studentCount = enrollmentCounts.getOrDefault(course.getId(), 0L).intValue();
             return CourseResponse.from(course, studentCount);
         });
     }

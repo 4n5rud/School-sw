@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { courseService, enrollmentService } from '@/lib/api';
@@ -10,6 +11,7 @@ import { Course } from '@/lib/api/types';
 import { useAuth } from '@/lib/context/AuthContext';
 
 export default function CourseDetailPage() {
+  const router = useRouter();
   const params = useParams();
   const courseId = parseInt(params.id as string);
   const { isLoggedIn } = useAuth();
@@ -43,6 +45,7 @@ export default function CourseDetailPage() {
   const handleEnroll = async () => {
     if (!isLoggedIn) {
       alert('로그인 후 수강 신청이 가능합니다');
+      router.push('/auth/login');
       return;
     }
 
@@ -50,11 +53,29 @@ export default function CourseDetailPage() {
       setIsEnrolling(true);
       console.log('수강 신청 시작:', { courseId, isLoggedIn });
       await enrollmentService.enrollCourse(courseId);
+      console.log('[수강신청 성공] 강의ID:', courseId);
       setEnrollSuccess(true);
       alert('수강 신청이 완료되었습니다!');
     } catch (err: any) {
-      console.error('수강 신청 실패:', err);
-      alert(err.message || '수강 신청에 실패했습니다');
+      console.error('[수강신청 에러]', err);
+      
+      // ⭐ 401 에러: 토큰 만료 또는 유효하지 않음
+      if (err.status === 401) {
+        alert('로그인 정보가 만료되었습니다. 다시 로그인해주세요');
+        router.push('/auth/login');
+      } 
+      // 409 에러: 이미 등록된 강의
+      else if (err.status === 409) {
+        alert('이미 등록된 강의입니다');
+      }
+      // 403 에러: 강의를 찾을 수 없음
+      else if (err.status === 403) {
+        alert('강의를 찾을 수 없습니다');
+      }
+      // 기타 에러
+      else {
+        alert(err.message || '수강 신청에 실패했습니다');
+      }
     } finally {
       setIsEnrolling(false);
     }

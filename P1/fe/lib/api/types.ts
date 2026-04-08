@@ -85,11 +85,25 @@ export interface PaginationMeta {
   pageSize: number;
   totalElements: number;
   totalPages: number;
+  first: boolean;
+  last: boolean;
+  size: number;
+  number: number;
+  numberOfElements: number;
+  empty: boolean;
 }
 
 export interface PaginatedResponse<T> {
   content: T[];
   pageable: PaginationMeta;
+  totalPages: number;       // ✅ 추가: BE 응답의 최상위 필드
+  totalElements: number;    // ✅ 추가: BE 응답의 최상위 필드
+  first: boolean;
+  last: boolean;
+  size: number;
+  number: number;
+  numberOfElements: number;
+  empty: boolean;
 }
 
 // ================================================

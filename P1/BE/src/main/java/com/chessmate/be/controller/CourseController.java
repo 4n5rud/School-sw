@@ -61,6 +61,35 @@ public class CourseController {
     }
 
     /**
+     * 강의 목록 조회 (전체 강의 - 카테고리 없음)
+     * GET /api/courses?page=0&size=100
+     *
+     * 기본 동작:
+     * - 파라미터 없음: 전체 강의 100개까지 한 페이지에 표시
+     * - ?page=0&size=10: 원하는 크기로 페이지네이션 가능
+     *
+     * @param page 페이지 번호 (기본값: 0)
+     * @param size 페이지당 개수 (기본값: 100 - 모든 강의 표시)
+     * @return 강의 페이지 정보
+     */
+    @GetMapping
+    public ResponseEntity<ApiResponse<Page<CourseResponse>>> getAllCourses(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "100") int size) {
+
+        // 페이지 크기 제한 (최대 100)
+        if (size > 100) {
+            size = 100;
+        }
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+
+        log.debug("Get all courses - page: {}, size: {}", page, size);
+        Page<CourseResponse> courses = courseService.getAllCourses(pageable);
+        return ResponseEntity.ok(ApiResponse.success(courses));
+    }
+
+    /**
      * 강의 상세 조회
      * GET /api/courses/{courseId}
      *
@@ -120,36 +149,6 @@ public class CourseController {
         ));
     }
 
-    /**
-     * 강의 목록 조회 (전체 강의 - 카테고리 없음)
-     * GET /api/courses?page=0&size=100
-     *
-     * 기본 동작:
-     * - 파라미터 없음: 전체 강의 100개까지 한 페이지에 표시
-     * - ?page=0&size=10: 원하는 크기로 페이지네이션 가능
-     *
-     * @param page 페이지 번호 (기본값: 0)
-     * @param size 페이지당 개수 (기본값: 100 - 모든 강의 표시)
-     * @param sort 정렬 기준 (기본값: createdAt 내림차순)
-     * @return 강의 페이지 정보
-     */
-    @GetMapping
-    public ResponseEntity<ApiResponse<Page<CourseResponse>>> getAllCourses(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "100") int size,
-            @RequestParam(defaultValue = "createdAt") String sort) {
-
-        // 페이지 크기 제한 (최대 100)
-        if (size > 100) {
-            size = 100;
-        }
-
-        Pageable pageable = PageRequest.of(page, size, Sort.by(sort).descending());
-
-        log.debug("Get all courses - page: {}, size: {}, sort: {}", page, size, sort);
-        Page<CourseResponse> courses = courseService.getAllCourses(pageable);
-        return ResponseEntity.ok(ApiResponse.success(courses));
-    }
 
     /**
      * 카테고리별 강의 조회

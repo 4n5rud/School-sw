@@ -31,12 +31,19 @@ export default function Home() {
 
         let response: PaginatedResponse<Course>;
 
-        if (searchKeyword.trim() || selectedCategory !== 'ALL') {
-          // 검색 또는 카테고리 필터 적용
+        if (searchKeyword.trim()) {
+          // 검색 적용 (카테고리와 함께 검색 가능)
           const categoryParam = selectedCategory !== 'ALL' ? selectedCategory : undefined;
           response = await courseService.searchCourses(
             searchKeyword,
             categoryParam,
+            0,
+            PAGE_SIZE
+          );
+        } else if (selectedCategory !== 'ALL') {
+          // 카테고리 필터만 적용
+          response = await courseService.getCoursesByCategory(
+            selectedCategory,
             0,
             PAGE_SIZE
           );
@@ -46,8 +53,8 @@ export default function Home() {
         }
 
         setCourses(response.content);
-        setTotalPages(response.pageable?.totalPages || 1);
-        setTotalElements(response.pageable?.totalElements || 0);
+        setTotalPages(response.totalPages || 1);
+        setTotalElements(response.totalElements || 0);
       } catch (err: any) {
         console.error('강의 목록 조회 실패:', err);
         setError(err.message || '강의를 불러오는데 실패했습니다');
@@ -70,11 +77,19 @@ export default function Home() {
 
         let response: PaginatedResponse<Course>;
 
-        if (searchKeyword.trim() || selectedCategory !== 'ALL') {
+        if (searchKeyword.trim()) {
+          // 검색 적용 (카테고리와 함께 검색 가능)
           const categoryParam = selectedCategory !== 'ALL' ? selectedCategory : undefined;
           response = await courseService.searchCourses(
             searchKeyword,
             categoryParam,
+            currentPage,
+            PAGE_SIZE
+          );
+        } else if (selectedCategory !== 'ALL') {
+          // 카테고리 필터만 적용
+          response = await courseService.getCoursesByCategory(
+            selectedCategory,
             currentPage,
             PAGE_SIZE
           );
@@ -83,8 +98,8 @@ export default function Home() {
         }
 
         setCourses(response.content);
-        setTotalPages(response.pageable?.totalPages || 1);
-        setTotalElements(response.pageable?.totalElements || 0);
+        setTotalPages(response.totalPages || 1);
+        setTotalElements(response.totalElements || 0);
       } catch (err: any) {
         console.error('페이지 로드 실패:', err);
         setError(err.message || '페이지를 불러오는데 실패했습니다');
