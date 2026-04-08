@@ -9,7 +9,8 @@ export { authService } from './authService';
 export { courseService } from './courseService';
 export { enrollmentService } from './enrollmentService';
 export { lectureProgressService } from './lectureProgressService';
+export { sectionService } from './sectionService';
 
 // 사용 예시:
-// import { authService, courseService, enrollmentService } from '@/lib/api';
-// import type { Course, Enrollment } from '@/lib/api';
+// import { authService, courseService, enrollmentService, sectionService } from '@/lib/api';
+// import type { Course, Enrollment, Section, Lecture } from '@/lib/api';

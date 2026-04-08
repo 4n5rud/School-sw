@@ -125,6 +125,30 @@ export interface Enrollment {
 // ================================================
 // 학습 진행 API 타입
 // ================================================
+
+/**
+ * 강의(Lecture) 응답
+ * 동영상 스트리밍 정보 포함
+ */
+export interface Lecture {
+  id: number;
+  title: string;
+  videoUrl: string;
+  playTime: number; // 영상 길이 (초)
+  sortOrder: number;
+}
+
+/**
+ * 섹션(Section) 응답
+ * 섹션별 강의 목록 포함
+ */
+export interface Section {
+  id: number;
+  title: string;
+  sortOrder: number;
+  lectures: Lecture[];
+}
+
 export interface LectureProgressCreateRequest {
   lectureId: number;
   lastPosition: number;
@@ -135,7 +159,9 @@ export interface LectureProgress {
   memberId: number;
   lectureId: number;
   lectureName: string;
+  playTime?: number; // 전체 강의 길이 (초)
   lastPosition: number;
+  watchPercentage?: number; // 시청 비율 (%)
   updatedAt: string;
 }
 
@@ -143,8 +169,10 @@ export interface LectureProgress {
 // API 응답 래퍼
 // ================================================
 export interface ApiResponse<T> {
+  success: boolean;
   data: T;
   message: string;
+  timestamp?: string;
 }
 
 export interface ApiError {

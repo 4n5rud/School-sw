@@ -15,6 +15,8 @@ import {
   LectureProgress,
   LectureProgressCreateRequest,
   ApiError,
+  Section,
+  Lecture,
 } from './types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
@@ -393,6 +395,33 @@ class ApiClient {
     return this.makeRequest<null>(`/lecture-progress/lectures/${lectureId}`, {
       method: 'DELETE',
       includeAuth: true,
+    });
+  }
+
+  // ================================================
+  // 섹션/강의 API
+  // ================================================
+  async getSectionsByCourse(courseId: number): Promise<ApiResponse<Section[]>> {
+    console.log('[API Call] getSectionsByCourse', { courseId });
+
+    return this.makeRequest<Section[]>(`/sections/courses/${courseId}`, {
+      method: 'GET',
+    });
+  }
+
+  async getLecturesBySection(sectionId: number): Promise<ApiResponse<Lecture[]>> {
+    console.log('[API Call] getLecturesBySection', { sectionId });
+
+    return this.makeRequest<Lecture[]>(`/sections/${sectionId}/lectures`, {
+      method: 'GET',
+    });
+  }
+
+  async getLectureById(lectureId: number): Promise<ApiResponse<Lecture>> {
+    console.log('[API Call] getLectureById', { lectureId });
+
+    return this.makeRequest<Lecture>(`/sections/lectures/${lectureId}`, {
+      method: 'GET',
     });
   }
 
