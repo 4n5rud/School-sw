@@ -124,8 +124,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/courses").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/courses/**").permitAll()
 
-                        // 🟢 섹션/강의 조회 (인증 필수)
-                        .requestMatchers(HttpMethod.GET, "/api/sections/**").authenticated()
+                        // 🟢 섹션/강의 조회 (공개)
+                        .requestMatchers(HttpMethod.GET, "/api/sections/**").permitAll()
 
                         // 🟢 헬스 체크 (공개)
                         .requestMatchers("/health").permitAll()
