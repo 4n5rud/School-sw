@@ -1,10 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import Header from '@/components/Header';
-import Footer from '@/components/Footer';
 import VideoPlayer from '@/components/VideoPlayer';
 import SectionSidebar from '@/components/SectionSidebar';
 import { sectionService, courseService } from '@/lib/api';
@@ -18,7 +16,6 @@ import { Course, Section, Lecture } from '@/lib/api/types';
  */
 export default function LearningPage() {
   const params = useParams();
-  const router = useRouter();
   const courseId = parseInt(params.courseId as string);
 
   const [course, setCourse] = useState<Course | null>(null);
@@ -194,119 +191,99 @@ export default function LearningPage() {
   }
 
   return (
-    <>
-      {/* 미니 헤더 - 돌아가기 버튼만 표시 */}
-      <div className="fixed top-0 left-0 right-0 h-16 bg-black z-50 border-b border-gray-800 flex items-center px-4">
-        <Link href="/my-courses" className="text-[#FFD700] hover:text-yellow-400 text-sm font-medium">
-          ← {course.title}
+    <div className="w-screen h-screen bg-black text-white flex flex-col overflow-hidden">
+      {/* 헤더 */}
+      <header className="h-14 border-b border-gray-700 flex items-center px-4 gap-4 bg-[#0a0a0a] flex-shrink-0">
+        <Link href="/my-courses" className="text-yellow-500 hover:text-yellow-400 text-sm font-medium">
+          ← 내 강의실
         </Link>
-      </div>
+        <h1 className="text-lg font-bold">{course?.title}</h1>
+      </header>
 
-      {/* 풀스크린 메인 레이아웃 */}
-      <main className="w-full h-screen bg-[#000000] overflow-hidden pt-16">
-        <div className="w-full h-full flex">
-          {/* 중앙: 비디오 플레이어 (메인) */}
-          <div className="flex-1 flex flex-col overflow-hidden">
-            {/* 비디오 플레이어 - 화면 대부분 차지 */}
-            <div className="flex-1 overflow-hidden">
-              <VideoPlayer
-                lectureId={selectedLecture.id}
-                videoUrl={selectedLecture.videoUrl}
-                title={selectedLecture.title}
-                playTime={selectedLecture.playTime}
-              />
+      {/* 메인 컨텐츠 */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* 왼쪽: 비디오 플레이어 영역 */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {/* 비디오 플레이어 */}
+          <div className="flex-1 overflow-hidden bg-black">
+            <VideoPlayer
+              lectureId={selectedLecture?.id || 0}
+              videoUrl={selectedLecture?.videoUrl || ''}
+              title={selectedLecture?.title || ''}
+              playTime={selectedLecture?.playTime || 0}
+            />
+          </div>
+
+          {/* 하단: 네비게이션 및 정보 */}
+          <div className="h-auto bg-[#0a0a0a] border-t border-gray-700 p-4 flex-shrink-0">
+            {/* 네비게이션 버튼 */}
+            <div className="flex gap-3 mb-3">
+              <button
+                onClick={handlePrevLecture}
+                className="flex-1 bg-gray-800 hover:bg-gray-700 text-white py-2 text-sm rounded font-medium transition"
+              >
+                ← 이전
+              </button>
+              <button
+                onClick={handleNextLecture}
+                className="flex-1 bg-yellow-500 hover:bg-yellow-400 text-black py-2 text-sm rounded font-semibold transition"
+              >
+                다음 →
+              </button>
             </div>
 
-            {/* 하단: 네비게이션 및 정보 */}
-            <div className="bg-[#0a0a0a] border-t border-gray-800 p-4 space-y-4">
-              {/* 네비게이션 버튼 */}
-              <div className="flex gap-3">
-                <button
-                  onClick={handlePrevLecture}
-                  className="flex-1 bg-gray-700 text-[#ffffff] py-2 text-sm rounded hover:bg-gray-600 transition font-medium"
-                >
-                  ← 이전
-                </button>
-                <button
-                  onClick={handleNextLecture}
-                  className="flex-1 bg-[#FFD700] text-[#000000] py-2 text-sm rounded hover:bg-yellow-400 transition font-semibold"
-                >
-                  다음 →
-                </button>
-              </div>
-
-              {/* 강의 정보 */}
-              <div className="bg-[#1a1a1a] rounded p-3 border border-gray-800 space-y-2">
-                <div>
-                  <h3 className="text-sm font-bold text-[#ffffff]">
-                    {selectedLecture.title}
-                  </h3>
-                  <p className="text-gray-400 text-xs">
-                    강사: {course.instructor.nickname}
-                  </p>
-                </div>
-
-                <div className="flex gap-4 text-xs">
-                  <div>
-                    <p className="text-gray-500">강의 길이</p>
-                    <p className="text-[#FFD700] font-semibold">
-                      {Math.floor(selectedLecture.playTime / 60)}분
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-gray-500">수강생</p>
-                    <p className="text-[#FFD700] font-semibold">
-                      {course.studentCount.toLocaleString()}명
-                    </p>
-                  </div>
-                </div>
+            {/* 강의 정보 */}
+            <div className="bg-[#1a1a1a] rounded p-3 border border-gray-700 text-sm">
+              <h3 className="font-bold text-white mb-1">{selectedLecture?.title}</h3>
+              <p className="text-gray-400 text-xs mb-2">강사: {course?.instructor.nickname}</p>
+              <div className="flex gap-6 text-xs text-gray-400">
+                <div>강의 길이: <span className="text-yellow-500">{Math.floor((selectedLecture?.playTime || 0) / 60)}분</span></div>
+                <div>수강생: <span className="text-yellow-500">{course?.studentCount.toLocaleString()}</span>명</div>
               </div>
             </div>
           </div>
+        </div>
 
-          {/* 우측: 섹션 사이드바 */}
-          {sidebarOpen && (
-            <div className="w-80 bg-[#0a0a0a] border-l border-gray-800 overflow-y-auto animate-in fade-in slide-in-from-right duration-300 flex flex-col">
-              <div className="p-4 flex items-center justify-between sticky top-0 bg-[#0a0a0a] border-b border-gray-800 z-40">
-                <h2 className="text-sm font-semibold text-gray-300">📚 강의 목록</h2>
-                <button
-                  onClick={() => setSidebarOpen(false)}
-                  className="p-1 hover:bg-gray-700 rounded transition"
-                  title="사이드바 닫기"
-                >
-                  <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </button>
-              </div>
-              <div className="p-4 overflow-y-auto flex-1">
-                <SectionSidebar
-                  sections={sections}
-                  selectedLectureId={selectedLecture?.id}
-                  onLectureSelect={handleLectureSelect}
-                  expandedSectionId={expandedSectionId}
-                  onSectionToggle={setExpandedSectionId}
-                />
-              </div>
-            </div>
-          )}
-
-          {/* 사이드바 닫힐 때 토글 버튼 */}
-          {!sidebarOpen && (
-            <div className="w-16 bg-[#0a0a0a] border-l border-gray-800 flex flex-col items-center justify-center p-2">
+        {/* 오른쪽: 섹션 사이드바 */}
+        {sidebarOpen && (
+          <aside className="w-80 bg-[#0a0a0a] border-l border-gray-700 flex flex-col overflow-hidden">
+            <div className="h-12 border-b border-gray-700 flex items-center justify-between px-4 flex-shrink-0">
+              <h2 className="text-sm font-semibold">📚 강의 목록</h2>
               <button
-                onClick={() => setSidebarOpen(true)}
-                className="p-2 hover:bg-gray-700 rounded transition"
-                title="사이드바 열기"
+                onClick={() => setSidebarOpen(false)}
+                className="p-1 hover:bg-gray-700 rounded transition"
               >
-                <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l7-7-7-7" />
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
               </button>
             </div>
-          )}
-        </div>
-      </main>
-    </>
+            <div className="flex-1 overflow-y-auto p-4">
+              <SectionSidebar
+                sections={sections}
+                selectedLectureId={selectedLecture?.id}
+                onLectureSelect={handleLectureSelect}
+                expandedSectionId={expandedSectionId}
+                onSectionToggle={setExpandedSectionId}
+              />
+            </div>
+          </aside>
+        )}
+
+        {/* 사이드바 닫혔을 때 토글 버튼 */}
+        {!sidebarOpen && (
+          <div className="w-12 bg-[#0a0a0a] border-l border-gray-700 flex items-center justify-center flex-shrink-0">
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="p-2 hover:bg-gray-700 rounded transition"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l7-7-7-7" />
+              </svg>
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }

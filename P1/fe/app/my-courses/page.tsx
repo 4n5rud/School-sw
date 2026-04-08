@@ -26,7 +26,8 @@ export default function MyCoursesPage() {
         setIsLoading(true);
         setError(null);
         const response = await enrollmentService.getMyEnrollments(0, 100);
-        setEnrollments(response.content);
+        console.log('[MyCoursesPage] 수강 목록 조회:', response);
+        setEnrollments(response.data.content);
       } catch (err: any) {
         console.error('수강 목록 조회 실패:', err);
         setError(err.message || '수강 목록을 불러오는데 실패했습니다');
