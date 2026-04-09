@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -16,7 +16,6 @@ import { useAuth } from '@/lib/context/AuthContext';
  */
 export default function CourseDetailPage() {
   const params = useParams();
-  const router = useRouter();
   const courseId = parseInt(params.id as string);
   
   const { user, isLoggedIn } = useAuth();
@@ -65,7 +64,7 @@ export default function CourseDetailPage() {
 
   const handleEnroll = async () => {
     if (!isLoggedIn) {
-      router.push('/auth/login');
+      window.location.href = '/auth/login';
       return;
     }
 
@@ -80,10 +79,6 @@ export default function CourseDetailPage() {
     } finally {
       setIsEnrolling(false);
     }
-  };
-
-  const handleStartLearning = () => {
-    router.push(`/learning/${courseId}`);
   };
 
   if (isLoading) {
@@ -210,12 +205,12 @@ export default function CourseDetailPage() {
                 {/* Action Buttons */}
                 {isEnrolled ? (
                   <>
-                    <button
-                      onClick={handleStartLearning}
-                      className="w-full bg-[#FFD700] text-black py-3 rounded-lg font-semibold hover:bg-yellow-400 transition text-lg"
+                    <Link
+                      href={`/learning/${courseId}`}
+                      className="block w-full bg-[#FFD700] text-black py-3 rounded-lg font-semibold hover:bg-yellow-400 transition text-lg text-center"
                     >
                       🎓 학습하기
-                    </button>
+                    </Link>
                     <p className="text-center text-green-400 text-sm">수강 중인 강의입니다</p>
                   </>
                 ) : (
