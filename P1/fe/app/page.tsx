@@ -189,25 +189,6 @@ export default function Home() {
                 search
               </button>
             </div>
-
-            {/* Category Filter */}
-            <div className="flex gap-3 flex-wrap">
-              {categories.slice(0, 4).map((cat) => (
-                <button
-                  key={cat.id}
-                  onClick={() => handleCategoryClick(cat.id)}
-                  className={`px-6 py-2 rounded-full font-medium transition ${
-                    (cat.id === 'all' && selectedCategory === 'ALL') ||
-                    (cat.id === 'domestic_stock' && selectedCategory === 'DOMESTIC_STOCK') ||
-                    (cat.id === 'crypto' && selectedCategory === 'CRYPTO')
-                      ? 'bg-[#ffffff] text-[#000000]'
-                      : 'bg-gray-800 text-[#ffffff] hover:bg-gray-700'
-                  }`}
-                >
-                  {cat.name}
-                </button>
-              ))}
-            </div>
           </div>
         </section>
 
