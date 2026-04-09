@@ -117,7 +117,7 @@ export interface Enrollment {
   id: number;
   memberId: number;
   courseId: number;
-  courseName: string;
+  courseTitle: string;  // ✅ API에서 반환하는 필드명
   enrolledAt: string;
   isCompleted: boolean;
 }

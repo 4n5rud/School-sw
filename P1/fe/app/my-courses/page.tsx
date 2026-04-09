@@ -26,18 +26,42 @@ export default function MyCoursesPage() {
         setIsLoading(true);
         setError(null);
         const response = await enrollmentService.getMyEnrollments(0, 100);
-        console.log('[MyCoursesPage] 수강 목록 조회:', response);
-        console.log('[MyCoursesPage] response 구조:', {
-          hasData: 'data' in response,
-          hasContent: 'content' in response,
-          keys: Object.keys(response),
-          type: typeof response,
+        console.log('[MyCoursesPage] 전체 응답:', response);
+        console.log('[MyCoursesPage] response 타입:', typeof response);
+        console.log('[MyCoursesPage] response 키:', Object.keys(response || {}));
+        
+        // response 구조 분석
+        let enrollmentList: Enrollment[] = [];
+        
+        // 시도 1: response.data?.content
+        if ((response as any).data?.content) {
+          enrollmentList = (response as any).data.content;
+          console.log('[MyCoursesPage] 방법 1 성공 - response.data.content');
+        }
+        // 시도 2: response.content (Paginated로 직접 반환)
+        else if ((response as any).content) {
+          enrollmentList = (response as any).content;
+          console.log('[MyCoursesPage] 방법 2 성공 - response.content');
+        }
+        // 시도 3: response가 배열인 경우
+        else if (Array.isArray(response)) {
+          enrollmentList = response as Enrollment[];
+          console.log('[MyCoursesPage] 방법 3 성공 - response는 배열');
+        }
+        // 시도 4: 응답 전체가 Enrollment[]인 경우
+        else if ((response as any)[0]?.courseTitle !== undefined) {
+          enrollmentList = response as any[];
+          console.log('[MyCoursesPage] 방법 4 성공 - 직접 배열');
+        }
+        
+        console.log('[MyCoursesPage] 최종 강의 목록:', {
+          count: enrollmentList.length,
+          first: enrollmentList[0],
         });
-        // response 구조에 따라 content 접근
-        const enrollmentList = (response as any).data?.content || (response as any).content || [];
         setEnrollments(enrollmentList);
       } catch (err: any) {
         console.error('수강 목록 조회 실패:', err);
+        console.error('에러 타입:', err.constructor.name);
         setError(err.message || '수강 목록을 불러오는데 실패했습니다');
       } finally {
         setIsLoading(false);
@@ -132,7 +156,7 @@ export default function MyCoursesPage() {
                       {/* Title */}
                       <div>
                         <h3 className="font-bold text-base line-clamp-2 text-[#ffffff]">
-                          {enrollment.courseName}
+                          {enrollment.courseTitle}
                         </h3>
                       </div>
 
@@ -188,7 +212,7 @@ export default function MyCoursesPage() {
                       {/* Title */}
                       <div>
                         <h3 className="font-bold text-base line-clamp-2 text-[#ffffff]">
-                          {enrollment.courseName}
+                          {enrollment.courseTitle}
                         </h3>
                       </div>
 
