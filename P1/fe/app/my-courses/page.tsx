@@ -27,7 +27,15 @@ export default function MyCoursesPage() {
         setError(null);
         const response = await enrollmentService.getMyEnrollments(0, 100);
         console.log('[MyCoursesPage] 수강 목록 조회:', response);
-        setEnrollments(response.data.content);
+        console.log('[MyCoursesPage] response 구조:', {
+          hasData: 'data' in response,
+          hasContent: 'content' in response,
+          keys: Object.keys(response),
+          type: typeof response,
+        });
+        // response 구조에 따라 content 접근
+        const enrollmentList = (response as any).data?.content || (response as any).content || [];
+        setEnrollments(enrollmentList);
       } catch (err: any) {
         console.error('수강 목록 조회 실패:', err);
         setError(err.message || '수강 목록을 불러오는데 실패했습니다');

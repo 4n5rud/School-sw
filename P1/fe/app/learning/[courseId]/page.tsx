@@ -144,49 +144,33 @@ export default function LearningPage() {
 
   if (isLoading) {
     return (
-      <>
-        <Header />
-        <main className="min-h-screen bg-[#000000] flex items-center justify-center">
-          <p className="text-gray-400 text-xl">강의를 불러오는 중...</p>
-        </main>
-        <Footer />
-      </>
+      <div className="w-screen h-screen bg-black flex items-center justify-center">
+        <p className="text-gray-400 text-xl">강의를 불러오는 중...</p>
+      </div>
     );
   }
 
   if (error) {
     return (
-      <>
-        <Header />
-        <main className="min-h-screen bg-[#000000]">
-          <div className="max-w-7xl mx-auto px-4 py-12">
-            <div className="text-center">
-              <p className="text-red-400 text-lg mb-4">{error}</p>
-              <Link
-                href="/my-courses"
-                className="inline-block text-[#FFD700] hover:text-yellow-400"
-              >
-                내 강의 목록으로
-              </Link>
-            </div>
-          </div>
-        </main>
-        <Footer />
-      </>
+      <div className="w-screen h-screen bg-black flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-400 text-lg mb-4">{error}</p>
+          <Link
+            href="/my-courses"
+            className="inline-block text-yellow-500 hover:text-yellow-400"
+          >
+            내 강의 목록으로
+          </Link>
+        </div>
+      </div>
     );
   }
 
   if (!course || !selectedLecture) {
     return (
-      <>
-        <Header />
-        <main className="min-h-screen bg-[#000000]">
-          <div className="max-w-7xl mx-auto px-4 py-12">
-            <p className="text-gray-400">강의를 찾을 수 없습니다</p>
-          </div>
-        </main>
-        <Footer />
-      </>
+      <div className="w-screen h-screen bg-black flex items-center justify-center">
+        <p className="text-gray-400">강의를 찾을 수 없습니다</p>
+      </div>
     );
   }
 
