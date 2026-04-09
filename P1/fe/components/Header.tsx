@@ -40,12 +40,6 @@ export default function Header() {
           >
             홈
           </Link>
-          <Link
-            href="/courses"
-            className="text-[#ffffff] hover:text-gray-400 font-medium transition"
-          >
-            강의
-          </Link>
           {user && (
             <Link
               href="/my-courses"
@@ -113,13 +107,6 @@ export default function Header() {
             onClick={() => setIsMenuOpen(false)}
           >
             홈
-          </Link>
-          <Link
-            href="/courses"
-            className="block text-[#ffffff] hover:text-gray-400 font-medium py-2"
-            onClick={() => setIsMenuOpen(false)}
-          >
-            강의
           </Link>
           {user && (
             <Link
