@@ -12,8 +12,31 @@ interface VideoPlayerProps {
 }
 
 /**
+ * YouTube URL에서 비디오 ID 추출
+ */
+function extractYouTubeVideoId(url: string): string | null {
+  try {
+    // youtu.be 형식
+    const shortMatch = url.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/);
+    if (shortMatch) return shortMatch[1];
+
+    // youtube.com 형식 (v 파라미터)
+    const urlObj = new URL(url);
+    const videoId = urlObj.searchParams.get('v');
+    if (videoId && videoId.length === 11) return videoId;
+
+    // embed 형식
+    const embedMatch = url.match(/youtube\.com\/embed\/([a-zA-Z0-9_-]{11})/);
+    if (embedMatch) return embedMatch[1];
+  } catch (error) {
+    // URL 파싱 실패
+  }
+  return null;
+}
+
+/**
  * 비디오 플레이어 컴포넌트
- * - HTML5 video 태그 사용
+ * - HTML5 video 태그 또는 YouTube iframe 지원
  * - 진행 상황 자동 저장 (5초마다)
  * - 마지막 시청 위치 복원
  */
@@ -31,6 +54,9 @@ export default function VideoPlayer({
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaveTime, setLastSaveTime] = useState(0);
   const [watchPercentage, setWatchPercentage] = useState(0);
+  
+  // YouTube 여부
+  const youtubeVideoId = extractYouTubeVideoId(videoUrl);
 
   // 마지막 시청 위치에서 복원
   useEffect(() => {
@@ -150,55 +176,80 @@ export default function VideoPlayer({
     <div className="w-full space-y-4">
       {/* 비디오 플레이어 */}
       <div className="bg-black rounded-lg overflow-hidden shadow-lg">
-        <video
-          ref={videoRef}
-          className="w-full"
-          onLoadedMetadata={handleLoadedMetadata}
-          onTimeUpdate={handleTimeUpdate}
-          onPlay={() => setIsPlaying(true)}
-          onPause={() => setIsPlaying(false)}
-        >
-          <source src={videoUrl} type="video/mp4" />
-          브라우저가 비디오를 지원하지 않습니다.
-        </video>
+        {youtubeVideoId ? (
+          // YouTube iframe
+          <div className="aspect-video bg-black flex items-center justify-center">
+            <iframe
+              width="100%"
+              height="100%"
+              src={`https://www.youtube.com/embed/${youtubeVideoId}`}
+              title={title}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              className="border-0"
+              style={{ aspectRatio: '16 / 9' }}
+            />
+          </div>
+        ) : (
+          // HTML5 video
+          <video
+            ref={videoRef}
+            className="w-full"
+            onLoadedMetadata={handleLoadedMetadata}
+            onTimeUpdate={handleTimeUpdate}
+            onPlay={() => setIsPlaying(true)}
+            onPause={() => setIsPlaying(false)}
+          >
+            <source src={videoUrl} type="video/mp4" />
+            브라우저가 비디오를 지원하지 않습니다.
+          </video>
+        )}
       </div>
 
       {/* 커스텀 컨트롤 바 */}
       <div className="bg-[#1a1a1a] rounded-lg p-4 space-y-3 border border-gray-800">
-        {/* 진행률 바 */}
-        <div className="space-y-1">
-          <div className="w-full bg-gray-700 rounded-full h-1 overflow-hidden">
-            <div
-              className="h-full bg-[#FFD700] transition-all duration-100"
-              style={{ width: `${watchPercentage}%` }}
-            />
+        {youtubeVideoId ? (
+          <div className="text-center py-2 text-sm text-gray-400">
+            🎥 YouTube 영상 재생 중
           </div>
-          <div className="text-xs text-gray-400">
-            {watchPercentage.toFixed(1)}% 시청 완료
-          </div>
-        </div>
-
-        {/* 재생 시간 */}
-        <div className="flex items-center justify-between text-sm text-gray-300">
-          <span>{formatTime(currentTime)}</span>
-          <span className="text-gray-500">{formatTime(duration)}</span>
-        </div>
-
-        {/* 컨트롤 버튼 */}
-        <div className="flex items-center gap-4">
-          <button
-            onClick={handlePlayPause}
-            className="flex-1 bg-[#FFD700] text-black font-semibold py-2 rounded-lg hover:bg-yellow-400 transition"
-          >
-            {isPlaying ? '⏸ 일시정지' : '▶️ 재생'}
-          </button>
-
-          {isSaving && (
-            <div className="text-xs text-green-400 bg-green-900/20 px-2 py-1 rounded">
-              저장 중...
+        ) : (
+          <>
+            {/* 진행률 바 */}
+            <div className="space-y-1">
+              <div className="w-full bg-gray-700 rounded-full h-1 overflow-hidden">
+                <div
+                  className="h-full bg-[#FFD700] transition-all duration-100"
+                  style={{ width: `${watchPercentage}%` }}
+                />
+              </div>
+              <div className="text-xs text-gray-400">
+                {watchPercentage.toFixed(1)}% 시청 완료
+              </div>
             </div>
-          )}
-        </div>
+
+            {/* 재생 시간 */}
+            <div className="flex items-center justify-between text-sm text-gray-300">
+              <span>{formatTime(currentTime)}</span>
+              <span className="text-gray-500">{formatTime(duration)}</span>
+            </div>
+
+            {/* 컨트롤 버튼 */}
+            <div className="flex items-center gap-4">
+              <button
+                onClick={handlePlayPause}
+                className="flex-1 bg-[#FFD700] text-black font-semibold py-2 rounded-lg hover:bg-yellow-400 transition"
+              >
+                {isPlaying ? '⏸ 일시정지' : '▶️ 재생'}
+              </button>
+
+              {isSaving && (
+                <div className="text-xs text-green-400 bg-green-900/20 px-2 py-1 rounded">
+                  저장 중...
+                </div>
+              )}
+            </div>
+          </>
+        )}
 
         {/* 강의 정보 */}
         <div className="pt-2 border-t border-gray-700 space-y-1">

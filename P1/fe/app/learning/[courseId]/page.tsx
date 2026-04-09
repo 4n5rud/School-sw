@@ -192,7 +192,7 @@ export default function LearningPage() {
           <div className="flex-1 overflow-hidden bg-black">
             <VideoPlayer
               lectureId={selectedLecture?.id || 0}
-              videoUrl={selectedLecture?.videoUrl || ''}
+              videoUrl={'https://www.youtube.com/watch?v=0KC9TBc3jXc&list=PLd2h25xSbdnoWbZGmLWufzDmga0EkE2QK'}
               title={selectedLecture?.title || ''}
               playTime={selectedLecture?.playTime || 0}
             />
