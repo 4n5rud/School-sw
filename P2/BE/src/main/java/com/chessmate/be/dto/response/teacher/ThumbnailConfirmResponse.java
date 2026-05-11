@@ -1,0 +1,18 @@
+package com.chessmate.be.dto.response.teacher;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class ThumbnailConfirmResponse {
+    private Long courseId;
+    private String thumbnailUrl;
+    private LocalDateTime confirmedAt;
+}

@@ -1,0 +1,43 @@
+spring:
+  application:
+    name: BE
+  datasource:
+    url: jdbc:mysql://localhost:3306/stock_class?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: root
+    password: 1234
+  jpa:
+    database-platform: org.hibernate.dialect.MySQLDialect
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+# JWT Configuration
+jwt:
+  secret: your-secret-key-must-be-at-least-32-characters-long-for-hs256-algorithm-12345678
+  access-token-expiration: 3600000 # 1시간 (밀리초)
+  refresh-token-expiration: 604800000 # 7일 (밀리초)
+
+# Cloudflare R2 Configuration (더미값 - 실제 사용 시 교체)
+cloudflare:
+  r2:
+    account-id: 8abcc1ccfb278ca2c5b3e8ba07623e9e
+    access-key-id: c211d096273a1dc3559889a3fe3aa477
+    secret-access-key: 3459d5f634ce642c667d15f09c1d498f42ed88df9edb3e09e24128ab85bd0c48
+    bucket: stockclass
+    public-cdn-url: https://pub-378809bd4c2a444baef31df7769cfdcd.r2.dev
+    presigned-url-expiry: 3600
+
+# Springdoc OpenAPI Configuration
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true
+    operationsSorter: method
+    tagsSorter: alpha
+  show-actuator: false
